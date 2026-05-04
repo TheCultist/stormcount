@@ -40,3 +40,6 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 storm_count_design.pdf
+
+.vercel
+.env*.local

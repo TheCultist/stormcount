@@ -6,8 +6,11 @@
 export const SCRYFALL_POOL_QUERY =
   "prefer:best is:default -t:dungeon -t:land -t:conspiracy -is:unset -mana:{X} not:extra not:token unique:cards game:paper";
 
-/** Daily Challenge: sequence length fixed at 100 cards. */
-export const DAILY_SEED_SIZE = 100;
+/**
+ * Daily Challenge: 51 cards → 50 anchor/mystery pairs → score goes 0–50.
+ * The first card is the initial anchor (no guess), so pairs = DAILY_SEED_SIZE - 1.
+ */
+export const DAILY_SEED_SIZE = 51;
 
 /** Top N players shown on leaderboard. */
 export const LEADERBOARD_TOP_N = 100;
@@ -33,6 +36,8 @@ export const ROUTES = {
   leaderboardDate: (date: string) => `/leaderboard/${date}`,
   profile: "/profile",
   contact: "/contact",
+  signIn: "/sign-in",
+  signUp: "/sign-up",
 } as const;
 
 /** Brand copy. */

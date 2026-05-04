@@ -15,15 +15,13 @@ const SCRYFALL_PAGE_SIZE = 175;
 
 function toMtgCard(card: ScryfallCard): MtgCard {
   const imageUris = card.image_uris ?? card.card_faces?.[0]?.image_uris;
-  const manaCost = card.mana_cost ?? card.card_faces?.[0]?.mana_cost ?? "";
   return {
     id: card.id,
     name: card.name,
     cmc: card.cmc ?? 0,
-    mana_cost: manaCost,
     type_line: card.type_line,
     image_uri: imageUris?.normal ?? imageUris?.large ?? imageUris?.small ?? "",
-    art_crop_uri: imageUris?.art_crop,
+    scryfall_uri: card.scryfall_uri,
   };
 }
 

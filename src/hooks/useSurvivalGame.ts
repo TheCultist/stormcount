@@ -6,7 +6,10 @@ import type { MtgCard, GuessDirection } from "@/lib/types";
 export type SurvivalStatus = "idle" | "playing" | "revealed" | "gameover";
 export type GuessResult = "correct" | "wrong";
 
+/** Local display PB — always written, shown even when signed out. */
 const PB_STORAGE_KEY = "stormcount_survival_pb";
+/** Pending submission for anonymous players — cleared once synced to DB. */
+const DEFERRED_KEY = "stormcount_survival_deferred";
 const LOW_WATER_MARK = 3;
 const REVEAL_DURATION_MS = 1000;
 
@@ -22,6 +25,37 @@ function writePB(score: number): number {
   const next = Math.max(prev, score);
   localStorage.setItem(PB_STORAGE_KEY, next.toString());
   return next;
+}
+
+function readDeferred(): number | null {
+  if (typeof window === "undefined") return null;
+  const raw = localStorage.getItem(DEFERRED_KEY);
+  if (!raw) return null;
+  const n = parseInt(raw, 10);
+  return Number.isNaN(n) ? null : n;
+}
+
+function writeDeferred(score: number) {
+  try { localStorage.setItem(DEFERRED_KEY, String(score)); } catch { /* ignore */ }
+}
+
+function clearDeferred() {
+  try { localStorage.removeItem(DEFERRED_KEY); } catch { /* ignore */ }
+}
+
+async function submitSurvivalScore(score: number): Promise<{ ok: boolean; best?: number; status: number }> {
+  try {
+    const res = await fetch("/api/scores/survival", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ score }),
+    });
+    if (!res.ok) return { ok: false, status: res.status };
+    const data = await res.json();
+    return { ok: true, best: data.best, status: res.status };
+  } catch {
+    return { ok: false, status: 0 };
+  }
 }
 
 // ── Scryfall fetch ─────────────────────────────────────────────────────────
@@ -53,9 +87,24 @@ export function useSurvivalGame() {
   const seenIdsRef = useRef<Set<string>>(new Set());
   const isFetchingRef = useRef(false);
 
-  // Load PB from localStorage once on mount.
+  // Load local PB on mount, then try to flush any deferred anonymous score.
   useEffect(() => {
     setPersonalBest(readPB());
+
+    const deferred = readDeferred();
+    if (deferred == null) return;
+
+    // Try to sync the pending score now that the user may have signed in.
+    submitSurvivalScore(deferred).then((result) => {
+      if (result.ok) {
+        clearDeferred();
+        // Update display PB if the server reports a higher value.
+        if (result.best != null) {
+          setPersonalBest((prev) => Math.max(prev, result.best!));
+        }
+      }
+      // If 401/403: still not signed in — leave deferred in localStorage.
+    });
   }, []);
 
   // Warn before tab close / refresh / internal navigation while a run is active.
@@ -201,6 +250,17 @@ export function useSurvivalGame() {
       if (!correct) {
         const newPB = writePB(currentStreak);
         setPersonalBest(newPB);
+
+        // Try to persist the score to the DB.
+        submitSurvivalScore(currentStreak).then((result) => {
+          if (result.status === 401 || result.status === 403) {
+            // Not signed in — save as deferred so we submit after login.
+            writeDeferred(currentStreak);
+          }
+          // On success: DB now holds the best. On other errors: localStorage
+          // still has the PB for display, and next run will re-attempt.
+        });
+
         setTimeout(() => setStatus("gameover"), REVEAL_DURATION_MS);
         return;
       }

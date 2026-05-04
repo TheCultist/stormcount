@@ -156,9 +156,9 @@ export default function Home() {
           href={ROUTES.daily}
           badge="Daily"
           title="Daily Challenge"
-          blurb="One seeded 100-card run per day. Race the clock, climb the leaderboard, prove your curve."
+          blurb="One seeded 50-card run per day. Race the clock, climb the leaderboard, prove your curve."
           accent="brass"
-          meta="100 cards · seeded"
+          meta="50 cards · seeded"
           romanIndex="I"
           index={0}
         />
@@ -166,7 +166,7 @@ export default function Home() {
           href={ROUTES.survival}
           badge="Survival"
           title="Survival"
-          blurb="Endless mode. No timer, no limit. One wrong answer ends the run. How high is your storm?"
+          blurb="Endless mode. No timer, no limit. One wrong answer ends the run. How high is your storm count?"
           accent="moonsilver"
           meta="∞ endless"
           romanIndex="II"

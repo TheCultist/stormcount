@@ -3,17 +3,16 @@
  * Raw Scryfall shapes live in @/lib/scryfall/types.
  */
 
-/** Minimal card shape used by the game UI. */
+/** Minimal card shape used by the game UI and persisted in daily_seeds. */
 export type MtgCard = {
   id: string;
   name: string;
   cmc: number;
-  mana_cost: string;
   type_line: string;
-  /** Full card face (frame + mana cost visible). Used for anchor. */
+  /** Full card image (normal size). Used for both anchor and mystery display. */
   image_uri: string;
-  /** Art crop only — no frame, no mana cost. Used for mystery. */
-  art_crop_uri?: string;
+  /** Canonical Scryfall page URL — stored for future deep-link use. */
+  scryfall_uri: string;
 };
 
 export type GameMode = "daily" | "survival";
@@ -26,7 +25,9 @@ export type GameStatus = "idle" | "playing" | "gameover";
 
 export type LeaderboardEntry = {
   rank: number;
+  userId?: string;
   username: string;
+  imageUrl?: string | null;
   score: number;
   elapsed_ms: number;
 };

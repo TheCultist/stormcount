@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useState, useEffect } from "react";
+import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { ROUTES, BRAND } from "@/lib/constants";
 import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
@@ -38,6 +40,9 @@ function NavLink({ href, label }: { href: string; label: string }) {
 }
 
 export default function NavBar() {
+  const { isSignedIn, isLoaded } = useUser();
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
   return (
     <header className="relative w-full border-b border-rule/60">
       {/* Top hairline highlight */}
@@ -98,17 +103,25 @@ export default function NavBar() {
         {/* Right controls */}
         <div className="flex items-center gap-3">
           <ThemeToggle />
-          {/* Sign-in (stub) */}
-          <button
-            type="button"
-            disabled
-            aria-disabled
-            className="hidden cursor-not-allowed items-center gap-2 border-y border-brass/30 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-brass/70 sm:inline-flex"
-            title="Auth not wired yet"
-          >
-            <span className="h-1 w-1 rotate-45 bg-brass/60" />
-            Sign in
-          </button>
+          {mounted && isLoaded && (
+            isSignedIn ? (
+              <UserButton
+                appearance={{
+                  elements: { avatarBox: "h-8 w-8" },
+                }}
+              />
+            ) : (
+              <SignInButton mode="redirect">
+                <button
+                  type="button"
+                  className="hidden items-center gap-2 border-y border-brass/30 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-brass/70 transition-colors hover:border-brass/60 hover:text-brass sm:inline-flex"
+                >
+                  <span className="h-1 w-1 rotate-45 bg-brass/60" />
+                  Sign in
+                </button>
+              </SignInButton>
+            )
+          )}
         </div>
       </nav>
 
