@@ -68,6 +68,23 @@
   --surface-2: rgba(34, 28, 20, 0.7);
   --surface-strong: rgba(12, 10, 16, 0.85);
 
+  /* Gradient tokens — used in inline styles, overridable per theme */
+  --grad-rule: linear-gradient(90deg, transparent 0%, rgba(201,160,90,0.45) 50%, transparent 100%);
+  --grad-logo-glow: radial-gradient(circle, rgba(232,193,129,0.6), transparent 70%);
+  --grad-card-wash-primary: linear-gradient(90deg, transparent, rgba(232,193,129,0.7), transparent);
+  --grad-card-wash-secondary: linear-gradient(90deg, transparent, rgba(219,226,236,0.7), transparent);
+  --shadow-dropcap: 0 0 32px rgba(232,193,129,0.35), 0 0 60px rgba(232,193,129,0.15);
+
+  /* CardDisplay — mana orb + card halo gradient tokens */
+  --grad-orb-anchor: radial-gradient(circle at 35% 30%, #e8c181, #7a5d2c 80%);
+  --grad-orb-mystery: radial-gradient(circle at 35% 30%, #dbe2ec, #5a6a82 80%);
+  --grad-halo-anchor: radial-gradient(circle, rgba(232,193,129,0.5), transparent 70%);
+  --grad-halo-mystery: radial-gradient(circle, rgba(182,194,212,0.4), transparent 70%);
+  --grad-card-bg-anchor: radial-gradient(ellipse at 50% 30%, rgba(232,193,129,0.20), transparent 65%);
+  --grad-card-bg-mystery: radial-gradient(ellipse at 50% 30%, rgba(182,194,212,0.18), transparent 65%);
+  --border-art-window: rgba(201, 160, 90, 0.18);
+  --bg-art-fallback: linear-gradient(135deg, #2a221a 0%, #1c1610 50%, #100c08 100%);
+
   /* Motion */
   --ease-out-expo: cubic-bezier(0.22, 1, 0.36, 1);
   --ease-in-out-cubic: cubic-bezier(0.65, 0, 0.35, 1);

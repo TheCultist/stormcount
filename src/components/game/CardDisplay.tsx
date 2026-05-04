@@ -31,14 +31,14 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
 
   return (
     <div className="relative w-full max-w-sm">
-      {/* Soft halo behind card — warm or cool */}
+      {/* Soft halo behind card — theme-aware via CSS vars */}
       <span
         aria-hidden
         className="pointer-events-none absolute -inset-3 -z-10 rounded-md opacity-60"
         style={{
           background: isMystery
-            ? "radial-gradient(ellipse at 50% 30%, rgba(182,194,212,0.18), transparent 65%)"
-            : "radial-gradient(ellipse at 50% 30%, rgba(232,193,129,0.20), transparent 65%)",
+            ? "var(--grad-card-bg-mystery)"
+            : "var(--grad-card-bg-anchor)",
           filter: "blur(28px)",
         }}
       />
@@ -73,7 +73,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
           <div
             className="relative aspect-[5/7] w-full overflow-hidden rounded-sm"
             style={{
-              border: "1px solid rgba(201, 160, 90, 0.18)",
+              border: "1px solid var(--border-art-window)",
               boxShadow: "0 1px 0 rgba(237,228,207,0.04) inset, 0 8px 16px -10px rgba(0,0,0,0.6) inset",
             }}
             onContextMenu={isMystery ? (e) => e.preventDefault() : undefined}
@@ -81,10 +81,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
             {/* Art backdrop fallback */}
             <div
               className="absolute inset-0"
-              style={{
-                background:
-                  "linear-gradient(135deg, #2a221a 0%, #1c1610 50%, #100c08 100%)",
-              }}
+              style={{ background: "var(--bg-art-fallback)" }}
             />
             {card?.image_uri ? (
               isMystery ? (
@@ -180,25 +177,25 @@ function ManaOrb({ isMystery, cmc }: { isMystery: boolean; cmc?: number }) {
       className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
       aria-label={isMystery ? "Hidden mana value" : `Mana value ${cmc ?? "—"}`}
     >
-      {/* Outer halo */}
+      {/* Outer halo — theme-aware */}
       <span
         aria-hidden
         className="absolute inset-[-6px] rounded-full opacity-70 blur-md"
         style={{
           background: isMystery
-            ? "radial-gradient(circle, rgba(182,194,212,0.4), transparent 70%)"
-            : "radial-gradient(circle, rgba(232,193,129,0.5), transparent 70%)",
+            ? "var(--grad-halo-mystery)"
+            : "var(--grad-halo-anchor)",
         }}
       />
 
-      {/* Pip body */}
+      {/* Pip body — theme-aware */}
       <span
         aria-hidden
         className="absolute inset-0 rounded-full"
         style={{
           background: isMystery
-            ? "radial-gradient(circle at 35% 30%, #dbe2ec, #5a6a82 80%)"
-            : "radial-gradient(circle at 35% 30%, #e8c181, #7a5d2c 80%)",
+            ? "var(--grad-orb-mystery)"
+            : "var(--grad-orb-anchor)",
           boxShadow:
             "0 1px 0 rgba(255,255,255,0.35) inset, 0 -1px 0 rgba(0,0,0,0.4) inset, 0 4px 8px -2px rgba(0,0,0,0.6)",
         }}

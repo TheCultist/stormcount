@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import "./theme-izzet.css";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
+import { ThemeProvider, themeScript } from "@/components/theme/ThemeProvider";
 import { BRAND } from "@/lib/constants";
 
 const fontDisplay = Fraunces({
@@ -38,17 +40,24 @@ export default function RootLayout({
   return (
     <html
       lang="en"
+      data-theme="izzet"
       className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable} h-full antialiased`}
     >
+      <head>
+        {/* Runs before paint — prevents flash of wrong theme */}
+        <script dangerouslySetInnerHTML={{ __html: themeScript }} />
+      </head>
       <body className="relative flex min-h-full flex-col text-foreground">
-        {/* Atmosphere — engraved-line texture + warm spotlight + corner sun-rays + vignette */}
-        <div className="atmosphere-root" aria-hidden />
-        <div className="atmosphere-rays" aria-hidden />
-        <div className="atmosphere-vignette" aria-hidden />
+        <ThemeProvider>
+          {/* Atmosphere layers */}
+          <div className="atmosphere-root" aria-hidden />
+          <div className="atmosphere-rays" aria-hidden />
+          <div className="atmosphere-vignette" aria-hidden />
 
-        <NavBar />
-        <main className="relative flex flex-1 flex-col">{children}</main>
-        <Footer />
+          <NavBar />
+          <main className="relative flex flex-1 flex-col">{children}</main>
+          <Footer />
+        </ThemeProvider>
       </body>
     </html>
   );

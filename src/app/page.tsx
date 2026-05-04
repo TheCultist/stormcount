@@ -1,5 +1,9 @@
 import Link from "next/link";
 import { BRAND, ROUTES } from "@/lib/constants";
+import { pickRandomQuote } from "@/lib/quotes";
+
+// Re-render on every request so the quote actually rotates.
+export const dynamic = "force-dynamic";
 
 type ModeCardProps = {
   href: string;
@@ -48,8 +52,8 @@ function ModeCard({
         className="pointer-events-none absolute inset-x-8 top-0 h-px"
         style={{
           background: isBrass
-            ? "linear-gradient(90deg, transparent, rgba(232,193,129,0.7), transparent)"
-            : "linear-gradient(90deg, transparent, rgba(219,226,236,0.7), transparent)",
+            ? "var(--grad-card-wash-primary)"
+            : "var(--grad-card-wash-secondary)",
         }}
       />
 
@@ -99,6 +103,7 @@ function ModeCard({
 }
 
 export default function Home() {
+  const quote = pickRandomQuote();
   // Split brand name to apply drop cap on first letter
   const [firstLetter, ...rest] = BRAND.name.split("");
 
@@ -106,10 +111,10 @@ export default function Home() {
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-stretch justify-center gap-16 px-5 py-16 sm:px-8 sm:py-24">
       {/* Hero */}
       <header className="anim-fade-in flex flex-col items-center gap-7 text-center">
-        {/* Eyebrow with bookend rule */}
-        <div className="rule-bookend max-w-md">
-          <span className="eyebrow whitespace-nowrap text-brass">
-            {BRAND.domain}
+        {/* Rotating MTG quote eyebrow */}
+        <div className="rule-bookend max-w-lg">
+          <span className="eyebrow text-brass">
+            {quote}
           </span>
         </div>
 
@@ -127,7 +132,7 @@ export default function Home() {
               style={{
                 fontVariationSettings: '"opsz" 144, "SOFT" 100, "WONK" 1',
                 textShadow:
-                  "0 0 32px rgba(232,193,129,0.35), 0 0 60px rgba(232,193,129,0.15)",
+                  "var(--shadow-dropcap)",
               }}
             >
               {firstLetter}
@@ -136,22 +141,13 @@ export default function Home() {
           </span>
         </h1>
 
-        {/* Tagline — italic, editorial */}
+        {/* Tagline */}
         <p
-          className="storm-display-italic max-w-xl text-lg leading-relaxed text-foreground/75 sm:text-xl"
+          className="storm-display-italic whitespace-nowrap text-base leading-relaxed text-foreground/75 sm:text-lg"
           style={{ fontVariationSettings: '"opsz" 144, "SOFT" 50' }}
         >
-          {BRAND.tagline}
+          Guess whether the hidden card&apos;s mana value beats the revealed one.
         </p>
-
-        {/* Rules-of-play strip */}
-        <div className="storm-mono mt-3 flex items-center gap-3 text-[10px] uppercase tracking-[0.28em] text-muted/80">
-          <span>Higher</span>
-          <span aria-hidden className="text-brass/60">·</span>
-          <span>Lower</span>
-          <span aria-hidden className="text-brass/60">·</span>
-          <span>Mana value</span>
-        </div>
       </header>
 
       {/* Mode cards */}
@@ -178,10 +174,13 @@ export default function Home() {
         />
       </section>
 
-      {/* Footer caption */}
-      <p className="storm-display-italic mx-auto max-w-md text-center text-sm leading-relaxed text-muted">
-        Guess whether the hidden card&apos;s mana value beats the revealed one.
-      </p>
+      {/* Decorative footer line */}
+      <div className="storm-mono flex items-center justify-center gap-3 text-[12px] uppercase tracking-[0.28em] text-muted/80">
+        <span aria-hidden className="h-px w-8 bg-gradient-to-r from-transparent to-rule/50" />
+        <span>How high is your Storm Count?</span>
+        <span aria-hidden className="h-px w-8 bg-gradient-to-l from-transparent to-rule/50" />
+      </div>
+
     </div>
   );
 }

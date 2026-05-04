@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { ROUTES, BRAND } from "@/lib/constants";
+import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const NAV_LINKS = [
   { href: ROUTES.daily, label: "Daily" },
@@ -43,10 +44,7 @@ export default function NavBar() {
       <span
         aria-hidden
         className="pointer-events-none absolute inset-x-0 top-0 h-px"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(232,193,129,0.45) 50%, transparent 100%)",
-        }}
+        style={{ background: "var(--grad-rule)" }}
       />
 
       <nav className="mx-auto flex h-16 w-full max-w-6xl items-center justify-between px-5 sm:h-20 sm:px-8">
@@ -74,10 +72,7 @@ export default function NavBar() {
             <span
               aria-hidden
               className="absolute -inset-1 rounded-full opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-60"
-              style={{
-                background:
-                  "radial-gradient(circle, rgba(232,193,129,0.6), transparent 70%)",
-              }}
+              style={{ background: "var(--grad-logo-glow)" }}
             />
           </span>
 
@@ -100,17 +95,21 @@ export default function NavBar() {
           ))}
         </ul>
 
-        {/* Sign-in (stub) */}
-        <button
-          type="button"
-          disabled
-          aria-disabled
-          className="hidden cursor-not-allowed items-center gap-2 border-y border-brass/30 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-brass/70 sm:inline-flex"
-          title="Auth not wired yet"
-        >
-          <span className="h-1 w-1 rotate-45 bg-brass/60" />
-          Sign in
-        </button>
+        {/* Right controls */}
+        <div className="flex items-center gap-3">
+          <ThemeToggle />
+          {/* Sign-in (stub) */}
+          <button
+            type="button"
+            disabled
+            aria-disabled
+            className="hidden cursor-not-allowed items-center gap-2 border-y border-brass/30 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-brass/70 sm:inline-flex"
+            title="Auth not wired yet"
+          >
+            <span className="h-1 w-1 rotate-45 bg-brass/60" />
+            Sign in
+          </button>
+        </div>
       </nav>
 
       {/* Bottom hairline + tiny center sigil */}

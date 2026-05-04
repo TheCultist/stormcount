@@ -7,6 +7,38 @@ import GameOverScreen from "@/components/game/GameOverScreen";
 import { useSurvivalGame } from "@/hooks/useSurvivalGame";
 import type { GuessDirection } from "@/lib/types";
 
+// ── Static rules data ─────────────────────────────────────────────────────
+
+const RULES = [
+  {
+    num: "1",
+    heading: "You see two cards",
+    body: "One is face-up with its mana value showing — that's your Anchor. The other is face-down. That's your Mystery.",
+  },
+  {
+    num: "2",
+    heading: "Does the Mystery cost more or less?",
+    body: "Your only job is to decide: is the Mystery card's mana value higher than (or equal to) the Anchor, or lower?",
+  },
+  {
+    num: "3",
+    heading: "Ties are fine — guess Higher",
+    body: "If both cards share the same mana value, that counts as Higher or Equal. So when in doubt, go Higher.",
+  },
+  {
+    num: "4",
+    heading: "Get it wrong and it's over",
+    body: "Each correct guess adds to your streak. Miss once and the run ends. No second chances — just try to beat your best.",
+  },
+] as const;
+
+const SHORTCUTS = [
+  { kbd: "↑ / W", label: "Higher or Equal" },
+  { kbd: "↓ / S", label: "Lower" },
+] as const;
+
+// ── Component ─────────────────────────────────────────────────────────────
+
 export default function SurvivalGame() {
   const {
     status,
@@ -45,25 +77,84 @@ export default function SurvivalGame() {
   // ── idle / loading ───────────────────────────────────────────────────────
   if (status === "idle" || isLoading) {
     return (
-      <div className="flex flex-1 flex-col items-center justify-center gap-8 py-24">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-5 py-20">
         {error && (
           <p className="storm-mono text-sm text-red-400">
             {error} — check your connection and try again.
           </p>
         )}
-        <button
-          type="button"
-          onClick={start}
-          disabled={isLoading}
-          className="btn-primary px-10 py-4 text-lg disabled:opacity-50"
-        >
-          {isLoading ? "Shuffling the deck…" : "Start Survival"}
-        </button>
-        {personalBest > 0 && (
-          <p className="storm-mono text-[11px] uppercase tracking-[0.22em] text-muted/70">
-            Personal best · {personalBest}
-          </p>
-        )}
+
+        {/* Rules panel */}
+        <article className="codex rim-brass anim-rise-in w-full rounded-md">
+          {/* Panel header */}
+          <header className="flex items-center gap-3 px-5 pt-5 pb-4">
+            <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass-bright" />
+            <p className="eyebrow text-[9px]">How to Play</p>
+          </header>
+
+          <span aria-hidden className="rule-brass mx-5 block h-px" />
+
+          {/* Rule rows */}
+          <ol className="flex flex-col gap-0 px-5 py-4">
+            {RULES.map(({ num, heading, body }) => (
+              <li key={num} className="flex gap-4 py-3 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-rule/30">
+                <span
+                  className="storm-display mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-brass/40 bg-paper-3/60 text-[10px] font-bold text-brass-bright"
+                  aria-hidden
+                >
+                  {num}
+                </span>
+                <div className="flex flex-col gap-0.5">
+                  <span
+                    className="storm-display text-[13px] font-semibold leading-snug text-foreground"
+                    style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
+                  >
+                    {heading}
+                  </span>
+                  <span className="storm-mono text-[11px] leading-relaxed text-foreground-muted">
+                    {body}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ol>
+
+          <span aria-hidden className="rule-brass mx-5 block h-px" />
+
+          {/* Keyboard shortcuts */}
+          <footer className="flex items-center justify-between gap-4 px-5 py-4">
+            <p className="storm-mono text-[9px] uppercase tracking-[0.22em] text-muted/70">
+              Keyboard
+            </p>
+            <div className="flex items-center gap-4">
+              {SHORTCUTS.map(({ kbd, label }) => (
+                <span key={kbd} className="flex items-center gap-1.5">
+                  <kbd className="storm-mono inline-flex items-center justify-center rounded-sm border border-rule/60 bg-background-deep/50 px-1.5 py-0.5 text-[10px] font-medium text-muted/80">
+                    {kbd}
+                  </kbd>
+                  <span className="storm-mono text-[10px] text-foreground/60">{label}</span>
+                </span>
+              ))}
+            </div>
+          </footer>
+        </article>
+
+        {/* Start CTA */}
+        <div className="flex flex-col items-center gap-3">
+          <button
+            type="button"
+            onClick={start}
+            disabled={isLoading}
+            className="btn-primary px-10 py-4 text-lg disabled:opacity-50"
+          >
+            {isLoading ? "Shuffling the deck…" : "Start Survival"}
+          </button>
+          {personalBest > 0 && (
+            <p className="storm-mono text-[11px] uppercase tracking-[0.22em] text-muted/70">
+              Personal best · {personalBest}
+            </p>
+          )}
+        </div>
       </div>
     );
   }

@@ -8,10 +8,7 @@ export default function Footer() {
       <span
         aria-hidden
         className="pointer-events-none block h-px w-full"
-        style={{
-          background:
-            "linear-gradient(90deg, transparent 0%, rgba(232,193,129,0.32) 50%, transparent 100%)",
-        }}
+        style={{ background: "var(--grad-rule)" }}
       />
 
       <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-5 px-5 py-7 text-[11px] sm:flex-row sm:px-8">
