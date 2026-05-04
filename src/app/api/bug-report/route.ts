@@ -3,8 +3,8 @@ import { Resend } from "resend";
 
 const resend = new Resend(process.env.RESEND_API_KEY);
 
-const TO = process.env.CONTACT_EMAIL ?? "contact@stormcount.gg";
-const FROM = "Storm Count <noreply@stormcount.gg>";
+const TO = process.env.CONTACT_EMAIL ?? "findthatcard@thecultist.it";
+const FROM = "Storm Count <noreply@thecultist.it>";
 
 const BUG_TYPE_LABELS: Record<string, string> = {
   "wrong-mana-value": "Wrong mana value displayed",

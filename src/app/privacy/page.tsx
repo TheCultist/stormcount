@@ -85,12 +85,14 @@ export default function PrivacyPage() {
               <p className="mb-2 font-semibold text-foreground/85">
                 Account data (optional)
               </p>
-              <p>
-                Account creation is optional. If you sign up, we collect the
-                information you provide through Clerk (our authentication
-                provider): email address and display name. This data is stored
-                by Clerk and used solely to identify your scores and display
-                them on leaderboards.
+                <p>
+                Account creation is optional. If you sign up, your email
+                address and display name are stored by{" "}
+                <strong className="text-foreground/85">Clerk</strong> (our
+                authentication provider) — not by us. We never store your email
+                address in our own database. We receive only your Clerk user ID
+                and display name to associate scores with your profile and
+                display them on leaderboards.
               </p>
             </div>
             <div>
@@ -177,8 +179,8 @@ export default function PrivacyPage() {
             <li className="flex flex-col gap-1">
               <strong className="text-foreground/85">Clerk</strong>
               <p>
-                Handles user authentication. When you create an account, your
-                email and name are stored by Clerk under their{" "}
+                Handles user authentication. Your email address and credentials
+                are stored exclusively by Clerk under their{" "}
                 <a
                   href="https://clerk.com/privacy"
                   target="_blank"
@@ -187,8 +189,8 @@ export default function PrivacyPage() {
                 >
                   privacy policy
                 </a>
-                . We receive only your Clerk user ID and display name to
-                associate scores with your profile.
+                . Storm Count&apos;s own database stores only your Clerk user
+                ID and display name — never your email address.
               </p>
             </li>
             <li className="flex flex-col gap-1">

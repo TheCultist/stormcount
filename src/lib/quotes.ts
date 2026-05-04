@@ -46,8 +46,8 @@ export const MTG_QUOTES: readonly string[] = [
   "It is the will of Zedruu.",
   "Don't worry, it's not that kind of Zur deck.",
   "Guess we're playing Archenemy now.",
-  "RTFC.",
-  "WOW. FUCK. TRON.",
+  "Read the card.",
+  "Wow. Tron again.",
   "And yet it still dies to Doom Blade.",
   "Don't mess with horseshoe crabs.",
   "N(U)PE.",
@@ -60,7 +60,7 @@ export const MTG_QUOTES: readonly string[] = [
   "All glory to the Gitrog Monster.",
   "Urabrask is a total bro.",
   "Jace has special bad ideas.",
-  "Lukka fucks up again.",
+  "Lukka makes questionable life choices. Again.",
 
   // ── Izzet / spellslinger flavor ──────────────────────────────────────────
   "For science.",
