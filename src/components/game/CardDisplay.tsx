@@ -1,3 +1,4 @@
+import Image from "next/image";
 import type { MtgCard } from "@/lib/types";
 
 type CardDisplayProps = {
@@ -7,6 +8,8 @@ type CardDisplayProps = {
    * "mystery" = same card content, only the mana value (CMC) is hidden.
    */
   mode: "anchor" | "mystery";
+  /** Overlay tint shown briefly after a guess. */
+  result?: "correct" | "wrong" | null;
 };
 
 /**
@@ -18,9 +21,13 @@ type CardDisplayProps = {
  * Both modes show name, art, and type. Only the CMC pill differs.
  * Rim accent (brass vs moonsilver) signals which side is which.
  */
-export default function CardDisplay({ card, mode }: CardDisplayProps) {
+export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
   const isMystery = mode === "mystery";
-  const accentRim = isMystery ? "rim-moonsilver" : "rim-brass";
+  const accentRim = result === "correct"
+    ? "rim-brass"
+    : result === "wrong"
+    ? "rim-moonsilver"
+    : isMystery ? "rim-moonsilver" : "rim-brass";
 
   return (
     <div className="relative w-full max-w-sm">
@@ -69,8 +76,9 @@ export default function CardDisplay({ card, mode }: CardDisplayProps) {
               border: "1px solid rgba(201, 160, 90, 0.18)",
               boxShadow: "0 1px 0 rgba(237,228,207,0.04) inset, 0 8px 16px -10px rgba(0,0,0,0.6) inset",
             }}
+            onContextMenu={isMystery ? (e) => e.preventDefault() : undefined}
           >
-            {/* Art backdrop — same in both modes (real art wires later) */}
+            {/* Art backdrop fallback */}
             <div
               className="absolute inset-0"
               style={{
@@ -78,22 +86,59 @@ export default function CardDisplay({ card, mode }: CardDisplayProps) {
                   "linear-gradient(135deg, #2a221a 0%, #1c1610 50%, #100c08 100%)",
               }}
             />
-            {/* engraved diagonal lines for texture */}
-            <div
-              aria-hidden
-              className="absolute inset-0 opacity-50"
-              style={{
-                backgroundImage:
-                  "repeating-linear-gradient(45deg, rgba(201,160,90,0.05) 0, rgba(201,160,90,0.05) 1px, transparent 1px, transparent 5px)",
-                mixBlendMode: "overlay",
-              }}
-            />
-            {/* TODO(real-art): swap for next/image of card.image_uri */}
-            <div className="absolute inset-0 flex items-center justify-center">
-              <span className="storm-display-italic text-[11px] text-muted/50">
-                card art
-              </span>
-            </div>
+            {card?.image_uri ? (
+              isMystery ? (
+                /*
+                 * Mystery: shift the image upward so the card's title bar
+                 * (name + mana cost strip, ~top 9%) slides above the
+                 * overflow:hidden boundary and is clipped out of view.
+                 * The inner div is 10% taller than the container; object-cover
+                 * scales the image to fill it, removing the top strip cleanly.
+                 */
+                <div className="absolute inset-0">
+                  <div className="absolute -top-[12%] bottom-0 left-0 right-0">
+                    <Image
+                      src={card.image_uri}
+                      alt={card.name}
+                      fill
+                      sizes="(max-width: 640px) 80vw, 384px"
+                      className="object-cover object-top"
+                      draggable={false}
+                      style={{ pointerEvents: "none" }}
+                    />
+                  </div>
+                </div>
+              ) : (
+                <Image
+                  src={card.image_uri}
+                  alt={card.name}
+                  fill
+                  sizes="(max-width: 640px) 80vw, 384px"
+                  className="object-cover"
+                  priority
+                />
+              )
+            ) : (
+              <div className="absolute inset-0 flex items-center justify-center">
+                <span className="storm-display-italic text-[11px] text-muted/50">
+                  loading…
+                </span>
+              </div>
+            )}
+
+            {/* Result overlay */}
+            {result && (
+              <div
+                aria-hidden
+                className="pointer-events-none absolute inset-0 transition-opacity duration-300"
+                style={{
+                  background:
+                    result === "correct"
+                      ? "rgba(74,222,128,0.25)"
+                      : "rgba(248,113,113,0.30)",
+                }}
+              />
+            )}
           </div>
         </div>
 

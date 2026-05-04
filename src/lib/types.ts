@@ -10,7 +10,10 @@ export type MtgCard = {
   cmc: number;
   mana_cost: string;
   type_line: string;
+  /** Full card face (frame + mana cost visible). Used for anchor. */
   image_uri: string;
+  /** Art crop only — no frame, no mana cost. Used for mystery. */
+  art_crop_uri?: string;
 };
 
 export type GameMode = "daily" | "survival";
