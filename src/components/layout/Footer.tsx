@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { BRAND, ROUTES } from "@/lib/constants";
 
+
 export default function Footer() {
   return (
     <footer className="mt-20 border-t border-rule/60">
@@ -39,14 +40,30 @@ export default function Footer() {
           .
         </p>
 
-        {/* Bug link — right */}
-        <Link
-          href={ROUTES.contact}
-          className="storm-mono inline-flex items-center gap-2 text-foreground/70 uppercase tracking-[0.2em] transition-colors hover:text-brass-bright"
-        >
-          Report a bug
-          <span aria-hidden className="text-brass">⤴</span>
-        </Link>
+        {/* Legal + bug links — right */}
+        <nav aria-label="Footer links" className="flex items-center gap-4">
+          <Link
+            href={ROUTES.about}
+            className="storm-mono text-foreground/60 uppercase tracking-[0.18em] transition-colors hover:text-brass-bright"
+          >
+            About
+          </Link>
+          <span aria-hidden className="text-rule/40">·</span>
+          <Link
+            href={ROUTES.privacy}
+            className="storm-mono text-foreground/60 uppercase tracking-[0.18em] transition-colors hover:text-brass-bright"
+          >
+            Privacy
+          </Link>
+          <span aria-hidden className="text-rule/40">·</span>
+          <Link
+            href={ROUTES.bugReport}
+            className="storm-mono inline-flex items-center gap-2 text-foreground/70 uppercase tracking-[0.2em] transition-colors hover:text-brass-bright"
+          >
+            Report a bug
+            <span aria-hidden className="text-brass">⤴</span>
+          </Link>
+        </nav>
       </div>
     </footer>
   );

@@ -5,6 +5,7 @@ import "./globals.css";
 import "./theme-izzet.css";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
+import CookieBanner from "@/components/layout/CookieBanner";
 import { ThemeProvider, themeScript } from "@/components/theme/ThemeProvider";
 import { BRAND } from "@/lib/constants";
 
@@ -31,6 +32,10 @@ export const metadata: Metadata = {
   title: `${BRAND.name} — ${BRAND.tagline}`,
   description:
     "Storm Count: a Magic: The Gathering higher/lower mana value guessing game.",
+  icons: {
+    icon: "/logo.png",
+    apple: "/logo.png",
+  },
 };
 
 export default function RootLayout({
@@ -60,6 +65,7 @@ export default function RootLayout({
             <NavBar />
             <main className="relative flex flex-1 flex-col">{children}</main>
             <Footer />
+            <CookieBanner />
           </ThemeProvider>
         </body>
       </html>

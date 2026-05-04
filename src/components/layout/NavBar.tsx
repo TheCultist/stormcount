@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
@@ -58,25 +59,19 @@ export default function NavBar() {
           href={ROUTES.home}
           className="group flex items-center gap-3"
         >
-          {/* Mark — small brass roundel w/ initials */}
-          <span
-            aria-hidden
-            className="relative flex h-9 w-9 items-center justify-center"
-          >
-            <span
-              className="absolute inset-0 rounded-full"
-              style={{
-                background:
-                  "radial-gradient(circle at 35% 30%, var(--brass-bright), var(--brass-deep) 75%)",
-              }}
+          {/* Mark — logo image */}
+          <span className="relative flex h-9 w-9 shrink-0">
+            <Image
+              src="/logo.png"
+              alt={`${BRAND.name} logo`}
+              width={36}
+              height={36}
+              className="h-9 w-9 rounded-lg object-contain"
+              priority
             />
-            <span className="absolute inset-[2px] rounded-full bg-background-deep/90" />
-            <span className="storm-display relative text-[11px] font-bold tracking-[0.05em] text-brass-bright">
-              SC
-            </span>
             <span
               aria-hidden
-              className="absolute -inset-1 rounded-full opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-60"
+              className="absolute -inset-1 rounded-xl opacity-0 blur-md transition-opacity duration-300 group-hover:opacity-60"
               style={{ background: "var(--grad-logo-glow)" }}
             />
           </span>

@@ -36,6 +36,9 @@ export const ROUTES = {
   leaderboardDate: (date: string) => `/leaderboard/${date}`,
   profile: "/profile",
   contact: "/contact",
+  bugReport: "/bug-report",
+  about: "/about",
+  privacy: "/privacy",
   signIn: "/sign-in",
   signUp: "/sign-up",
 } as const;
