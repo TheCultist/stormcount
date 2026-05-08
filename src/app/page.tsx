@@ -2,6 +2,16 @@ import Link from "next/link";
 import { BRAND, ROUTES } from "@/lib/constants";
 import { pickRandomQuote } from "@/lib/quotes";
 
+/** Format today's UTC date as "May 8, 2026" */
+function todayLabel(): string {
+  return new Date().toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+    timeZone: "UTC",
+  });
+}
+
 // Re-render on every request so the quote actually rotates.
 export const dynamic = "force-dynamic";
 
@@ -219,7 +229,7 @@ export default function Home() {
         <section className="grid gap-6 md:grid-cols-2">
           <ModeCard
             href={ROUTES.daily}
-            badge="Daily"
+            badge={todayLabel()}
             title="Daily Challenge"
             blurb="One seeded 50-card run per day. Race the clock, climb the leaderboard, prove your curve."
             accent="brass"
@@ -227,7 +237,7 @@ export default function Home() {
           />
           <ModeCard
             href={ROUTES.survival}
-            badge="Survival"
+            badge="One life"
             title="Survival"
             blurb="Endless mode. No timer, no limit. One wrong answer ends the run. How high is your storm count?"
             accent="moonsilver"

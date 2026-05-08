@@ -1,4 +1,5 @@
 import DailyGame from "@/components/game/DailyGame";
+import { getAffiliateConfig } from "@/lib/affiliate";
 
 import type { Metadata } from "next";
 
@@ -21,5 +22,6 @@ export const metadata: Metadata = {
 };
 
 export default function DailyPage() {
-  return <DailyGame />;
+  const affiliateConfig = getAffiliateConfig();
+  return <DailyGame affiliateConfig={affiliateConfig} />;
 }

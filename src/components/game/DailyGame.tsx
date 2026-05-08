@@ -1,12 +1,15 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import CardDisplay from "@/components/game/CardDisplay";
 import ScoreDisplay from "@/components/game/ScoreDisplay";
 import { useDailyGame } from "@/hooks/useDailyGame";
 import { ROUTES } from "@/lib/constants";
-import type { GuessDirection } from "@/lib/types";
+import { buildCardTraderLink, buildTcgPlayerLink } from "@/lib/affiliate";
+import type { AffiliateConfig } from "@/lib/affiliate";
+import type { GuessDirection, MtgCard } from "@/lib/types";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -15,28 +18,6 @@ function formatTime(ms: number): string {
   const m = Math.floor(totalSec / 60);
   const s = (totalSec % 60).toFixed(2);
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
-}
-
-/**
- * Build Scryfall search URLs that show all cards in the daily set.
- *
- * Uses exact-name matching (`!"Name"`) joined with OR. Scryfall silently
- * truncates long OR chains (51 terms exceeds its limit), so we split the list
- * into chunks of at most MAX_PER_QUERY cards and return one URL per chunk.
- *
- * Note: Scryfall's `id:` filter is for color identity, not card UUIDs.
- * The UUID-based `/cards/collection` endpoint is POST-only and not linkable.
- */
-const MAX_PER_QUERY = 26;
-
-function buildScryfallCardUrls(cards: import("@/lib/types").MtgCard[]): string[] {
-  const urls: string[] = [];
-  for (let i = 0; i < cards.length; i += MAX_PER_QUERY) {
-    const chunk = cards.slice(i, i + MAX_PER_QUERY);
-    const query = chunk.map((c) => `!"${c.name}"`).join(" or ");
-    urls.push(`https://scryfall.com/search?q=${encodeURIComponent(query)}`);
-  }
-  return urls;
 }
 
 // ── Rules data (daily-specific) ────────────────────────────────────────────
@@ -179,57 +160,238 @@ function RulesPanel() {
   );
 }
 
-// ── ScryfallCardLinks ──────────────────────────────────────────────────────
+// ── DailyCardsPanel ────────────────────────────────────────────────────────
 
-/**
- * Renders one or two "View on Scryfall" links.
- * Scryfall silently truncates long OR chains, so we cap each URL at
- * MAX_PER_QUERY (25) cards to ensure every card appears in the results.
- */
-function ScryfallCardLinks({ cards }: { cards: import("@/lib/types").MtgCard[] }) {
-  const urls = buildScryfallCardUrls(cards);
-  if (urls.length === 0) return null;
-
-  if (urls.length === 1) {
-    return (
+/** Buy-button row — reused in the grid item and the zoom modal. */
+function CardBuyButtons({
+  cardName,
+  ctUrl,
+  tcgUrl,
+}: {
+  cardName: string;
+  ctUrl: string;
+  tcgUrl: string | null;
+}) {
+  return (
+    <div className="flex gap-1.5">
       <a
-        href={urls[0]}
+        href={ctUrl}
         target="_blank"
-        rel="noopener noreferrer"
-        className="storm-mono text-[11px] uppercase tracking-[0.18em] text-foreground/55 transition-colors hover:text-brass-bright"
+        rel="noopener noreferrer sponsored"
+        aria-label={`Buy ${cardName} on CardTrader`}
+        className="group flex flex-1 items-center justify-center rounded-sm border border-rule/50 bg-paper-3/70 py-2.5 transition-colors hover:border-brass/50 hover:bg-paper-2"
       >
-        View today&apos;s cards on Scryfall ↗
+        <Image
+          src="/brand/cardtrader.svg"
+          alt="CardTrader"
+          width={96}
+          height={16}
+          className="h-3.5 w-auto opacity-75 transition-opacity group-hover:opacity-100"
+          unoptimized
+        />
       </a>
-    );
-  }
+      {tcgUrl && (
+        <a
+          href={tcgUrl}
+          target="_blank"
+          rel="noopener noreferrer sponsored"
+          aria-label={`Buy ${cardName} on TCGPlayer`}
+          className="group flex flex-1 items-center justify-center rounded-sm border border-rule/50 bg-paper-3/70 py-2.5 transition-colors hover:border-brass/50 hover:bg-paper-2"
+        >
+          <Image
+            src="/brand/tcgplayer.svg"
+            alt="TCGPlayer"
+            width={96}
+            height={16}
+            className="h-3.5 w-auto opacity-75 transition-opacity group-hover:opacity-100"
+            unoptimized
+          />
+        </a>
+      )}
+    </div>
+  );
+}
+
+/** Zoom modal — shown when a card is clicked in the grid. */
+function CardZoomModal({
+  card,
+  ctUrl,
+  tcgUrl,
+  onClose,
+}: {
+  card: MtgCard;
+  ctUrl: string;
+  tcgUrl: string | null;
+  onClose: () => void;
+}) {
+  // Close on Escape
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    window.addEventListener("keydown", handler);
+    return () => window.removeEventListener("keydown", handler);
+  }, [onClose]);
 
   return (
-    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
-      <span className="storm-mono text-[11px] uppercase tracking-[0.18em] text-foreground/45">
-        Today&apos;s cards on Scryfall:
-      </span>
-      {urls.map((url, i) => {
-        const start = i * MAX_PER_QUERY + 1;
-        const end = Math.min((i + 1) * MAX_PER_QUERY, cards.length);
-        return (
-          <a
-            key={url}
-            href={url}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="storm-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-brass transition-colors hover:text-brass-bright"
-          >
-            {start}–{end} ↗
-          </a>
-        );
-      })}
+    /* Backdrop */
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center p-4"
+      style={{ background: "rgba(10,9,8,0.82)", backdropFilter: "blur(6px)" }}
+      onClick={onClose}
+    >
+      {/* Modal card — stop propagation so clicks inside don't close */}
+      <div
+        className="codex rim-brass relative flex w-full max-w-sm flex-col gap-4 rounded-md p-5"
+        onClick={(e) => e.stopPropagation()}
+      >
+        {/* Close button */}
+        <button
+          type="button"
+          onClick={onClose}
+          aria-label="Close"
+          className="absolute right-3 top-3 flex h-7 w-7 items-center justify-center rounded-sm border border-rule/50 bg-background-deep/60 text-[11px] text-foreground/60 transition-colors hover:border-brass/50 hover:text-brass-bright"
+        >
+          ✕
+        </button>
+
+        {/* Card image — full size */}
+        <div className="overflow-hidden rounded-[6px]">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={card.image_uri}
+            alt={card.name}
+            width={223}
+            height={310}
+            className="w-full"
+          />
+        </div>
+
+        {/* Card name */}
+        <p
+          className="storm-display text-center text-base font-semibold text-foreground"
+          style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
+        >
+          {card.name}
+        </p>
+
+        {/* Buy buttons */}
+        <CardBuyButtons cardName={card.name} ctUrl={ctUrl} tcgUrl={tcgUrl} />
+      </div>
+    </div>
+  );
+}
+
+/**
+ * A single card in the reveal grid — thumbnail, name, and buy buttons.
+ * Clicking the image opens the zoom modal.
+ */
+function DailyCardItem({
+  card,
+  affiliateConfig,
+}: {
+  card: MtgCard;
+  affiliateConfig: AffiliateConfig | null;
+}) {
+  const [zoomed, setZoomed] = useState(false);
+  const shareCode = affiliateConfig?.cardTraderShareCode ?? "thecultist";
+  const tcgPartnerLink = affiliateConfig?.tcgPlayerPartnerLink ?? null;
+  const ctUrl = buildCardTraderLink(card.name, shareCode);
+  const tcgUrl = buildTcgPlayerLink(card.name, tcgPartnerLink);
+
+  return (
+    <>
+      <div className="flex flex-col gap-1.5">
+        {/* Clickable card image */}
+        <button
+          type="button"
+          onClick={() => setZoomed(true)}
+          aria-label={`Zoom ${card.name}`}
+          className="group block overflow-hidden rounded-[4px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brass"
+        >
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={card.image_uri}
+            alt={card.name}
+            width={223}
+            height={310}
+            className="w-full transition-transform duration-200 group-hover:scale-[1.03]"
+            loading="lazy"
+          />
+        </button>
+
+        {/* Card name */}
+        <p className="storm-mono truncate text-center text-[9px] uppercase tracking-[0.14em] text-foreground/60">
+          {card.name}
+        </p>
+
+        {/* Buy buttons */}
+        <CardBuyButtons cardName={card.name} ctUrl={ctUrl} tcgUrl={tcgUrl} />
+      </div>
+
+      {zoomed && (
+        <CardZoomModal
+          card={card}
+          ctUrl={ctUrl}
+          tcgUrl={tcgUrl}
+          onClose={() => setZoomed(false)}
+        />
+      )}
+    </>
+  );
+}
+
+/**
+ * Toggle button + expandable card grid for the daily end screen.
+ * Replaces the old Scryfall batch links.
+ */
+function DailyCardsPanel({
+  cards,
+  affiliateConfig,
+  open,
+  onToggle,
+}: {
+  cards: MtgCard[];
+  affiliateConfig: AffiliateConfig | null;
+  open: boolean;
+  onToggle: () => void;
+}) {
+  if (cards.length === 0) return null;
+
+  return (
+    <div className="flex w-full flex-col items-center gap-5">
+      <button
+        type="button"
+        onClick={onToggle}
+        className="storm-mono flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/50 transition-colors hover:text-brass-bright"
+      >
+        <span
+          aria-hidden
+          className="inline-block transition-transform duration-200"
+          style={{ transform: open ? "rotate(180deg)" : "rotate(0deg)" }}
+        >
+          ▼
+        </span>
+        {open ? "Hide today's cards" : "View today's cards"}
+      </button>
+
+      {open && (
+        <div className="grid w-full grid-cols-2 gap-3 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5">
+          {cards.map((card) => (
+            <DailyCardItem key={card.id} card={card} affiliateConfig={affiliateConfig} />
+          ))}
+        </div>
+      )}
     </div>
   );
 }
 
 // ── DailyGame ─────────────────────────────────────────────────────────────
 
-export default function DailyGame() {
+export default function DailyGame({
+  affiliateConfig = null,
+}: {
+  affiliateConfig?: AffiliateConfig | null;
+}) {
+  const [cardsVisible, setCardsVisible] = useState(false);
   const {
     status,
     cards,
@@ -387,18 +549,21 @@ export default function DailyGame() {
           </Link>
         </div>
 
-        {/* Leaderboard link + view cards */}
-        <div className="flex flex-col items-center gap-3">
-          <Link
-            href={ROUTES.leaderboard}
-            className="storm-mono text-[11px] uppercase tracking-[0.18em] text-foreground/55 transition-colors hover:text-foreground"
-          >
-            View today&apos;s leaderboard →
-          </Link>
-          {cards.length > 0 && (
-            <ScryfallCardLinks cards={cards} />
-          )}
-        </div>
+        {/* Leaderboard link */}
+        <Link
+          href={ROUTES.leaderboard}
+          className="storm-mono text-[11px] uppercase tracking-[0.18em] text-foreground/55 transition-colors hover:text-foreground"
+        >
+          View today&apos;s leaderboard →
+        </Link>
+
+        {/* Card reveal panel */}
+        <DailyCardsPanel
+          cards={cards}
+          affiliateConfig={affiliateConfig}
+          open={cardsVisible}
+          onToggle={() => setCardsVisible((v) => !v)}
+        />
       </div>
     );
   }
@@ -406,7 +571,7 @@ export default function DailyGame() {
   // ── done / submitting ─────────────────────────────────────────────────────
   if (status === "done" || status === "submitting") {
     return (
-      <div className="flex flex-1 items-center justify-center py-16">
+      <div className={`flex flex-1 flex-col gap-10 px-5 py-16 ${cardsVisible ? "items-center" : "items-center justify-center"}`}>
         <section className="relative mx-auto w-full max-w-md">
           <span
             aria-hidden
@@ -511,11 +676,20 @@ export default function DailyGame() {
               </Link>
             </div>
 
-            {cards.length > 0 && (
-              <ScryfallCardLinks cards={cards} />
-            )}
           </div>
         </section>
+
+        {/* Card reveal panel — outside the score card so the grid can go full-width */}
+        {cards.length > 0 && (
+          <div className="mx-auto w-full max-w-6xl">
+            <DailyCardsPanel
+              cards={cards}
+              affiliateConfig={affiliateConfig}
+              open={cardsVisible}
+              onToggle={() => setCardsVisible((v) => !v)}
+            />
+          </div>
+        )}
       </div>
     );
   }
