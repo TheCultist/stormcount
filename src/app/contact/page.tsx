@@ -4,8 +4,13 @@ import { BRAND, ROUTES } from "@/lib/constants";
 import ContactFormClient from "@/components/forms/ContactFormClient";
 
 export const metadata: Metadata = {
-  title: `Contact — ${BRAND.name}`,
-  description: "Get in touch with the Storm Count team.",
+  title: "Contact",
+  description: "Get in touch with the Storm Count team — questions, feedback, or anything else.",
+  openGraph: {
+    title: `Contact | ${BRAND.name}`,
+    description: "Get in touch with the Storm Count team.",
+    url: `https://${BRAND.domain}/contact`,
+  },
 };
 
 export default function ContactPage() {

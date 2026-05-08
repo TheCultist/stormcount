@@ -12,175 +12,237 @@ type ModeCardProps = {
   badge: string;
   accent: "brass" | "moonsilver";
   meta: string;
-  romanIndex: string;
-  index: number;
 };
 
-function ModeCard({
-  href,
-  title,
-  blurb,
-  badge,
-  accent,
-  meta,
-  romanIndex,
-  index,
-}: ModeCardProps) {
+function ModeCard({ href, title, blurb, badge, accent, meta }: ModeCardProps) {
   const isBrass = accent === "brass";
-  const accentText = isBrass ? "text-brass-bright" : "text-moonsilver-bright";
-  const dotBg = isBrass ? "bg-brass-bright" : "bg-moonsilver-bright";
+
+  // Cobalt (#1e70c0) for daily, Ember (#b83828) for survival
+  const borderColor = isBrass ? "#1e70c0" : "#b83828";
+  const borderColorBright = isBrass ? "#4da8e8" : "#d95a40";
+  const bgTint = isBrass
+    ? "rgba(30,112,192,0.08)"
+    : "rgba(184,56,40,0.08)";
 
   return (
     <Link
       href={href}
-      style={{ ["--i" as string]: index }}
-      className={`codex anim-rise-in stagger ${
-        isBrass ? "rim-brass" : "rim-moonsilver"
-      } group relative isolate flex flex-col gap-6 overflow-hidden rounded-md p-8 transition-transform duration-500 ease-out hover:-translate-y-1`}
+      className="group relative flex flex-col overflow-hidden rounded-lg transition-all duration-300 ease-out hover:-translate-y-1"
+      style={{
+        background: `linear-gradient(160deg, ${bgTint} 0%, rgba(10,14,26,0.98) 60%)`,
+        border: `1.5px solid ${borderColor}`,
+        boxShadow: `0 0 0 1px rgba(0,0,0,0.5), 0 12px 40px -16px rgba(0,0,0,0.8), 0 0 28px -8px ${borderColor}30`,
+      }}
     >
-      {/* Roman numeral watermark in corner — codex feel */}
+      {/* Glow pulse on hover */}
       <span
         aria-hidden
-        className="storm-display pointer-events-none absolute -right-3 -top-2 select-none text-[9rem] font-extrabold leading-none text-foreground/[0.035] transition-colors duration-500 group-hover:text-foreground/[0.06]"
-      >
-        {romanIndex}
-      </span>
-
-      {/* Hover wash */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-x-8 top-0 h-px"
-        style={{
-          background: isBrass
-            ? "var(--grad-card-wash-primary)"
-            : "var(--grad-card-wash-secondary)",
-        }}
+        className="pointer-events-none absolute inset-0 rounded-lg opacity-0 transition-opacity duration-400 group-hover:opacity-100"
+        style={{ boxShadow: `inset 0 0 0 1.5px ${borderColorBright}60` }}
       />
 
-      {/* Header row — badge + meta */}
-      <div className="relative flex items-center justify-between">
-        <span className="eyebrow inline-flex items-center gap-2">
-          <span className={`h-1 w-1 rotate-45 ${dotBg} anim-pulse`} />
-          {badge}
-        </span>
-        <span className="storm-mono text-[10px] uppercase tracking-[0.22em] text-muted/70">
-          {meta}
-        </span>
-      </div>
+      <div className="flex flex-1 flex-col gap-5 p-7">
+        {/* Header row — badge + meta */}
+        <div className="flex items-center justify-between">
+          <span
+            className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em]"
+            style={{
+              background: isBrass ? "rgba(30,112,192,0.28)" : "rgba(184,56,40,0.28)",
+              color: borderColorBright,
+              border: `1px solid ${borderColor}80`,
+            }}
+          >
+            <span
+              className="h-1.5 w-1.5 rounded-full"
+              style={{ background: borderColorBright }}
+            />
+            {badge}
+          </span>
+          <span
+            className="text-[10px] font-medium uppercase tracking-[0.22em]"
+            style={{ color: "var(--foreground-muted)", fontFamily: "var(--font-mono)" }}
+          >
+            {meta}
+          </span>
+        </div>
 
-      {/* Title — Fraunces with optical size for display */}
-      <h2
-        className={`storm-display relative text-4xl font-bold leading-[0.95] tracking-[-0.015em] text-foreground transition-colors duration-300 sm:text-5xl ${
-          isBrass
-            ? "group-hover:text-brass-bright"
-            : "group-hover:text-moonsilver-bright"
-        }`}
-        style={{ fontVariationSettings: '"opsz" 144, "SOFT" 30, "WONK" 0' }}
-      >
-        {title}
-      </h2>
-
-      {/* Hairline rule */}
-      <span aria-hidden className="rule-brass" />
-
-      {/* Blurb */}
-      <p className="storm-display-italic relative max-w-md text-[15px] leading-relaxed text-foreground/70">
-        {blurb}
-      </p>
-
-      {/* Footer row — enter cue */}
-      <div className="relative mt-1 flex items-center justify-between">
-        <span className={`eyebrow ${accentText}`}>Enter</span>
-        <span
-          aria-hidden
-          className={`storm-display text-2xl ${accentText} transition-transform duration-300 ease-out group-hover:translate-x-1`}
+        {/* Title */}
+        <h2
+          className="storm-display text-4xl font-bold leading-[1] tracking-[-0.02em] text-foreground transition-colors duration-300 sm:text-5xl"
+          style={{ fontVariationSettings: '"opsz" 144, "SOFT" 20, "WONK" 0' }}
         >
-          →
-        </span>
+          {title}
+        </h2>
+
+        {/* Blurb */}
+        <p
+          className="storm-display-italic flex-1 text-[14px] leading-relaxed"
+          style={{ color: "var(--foreground-muted)" }}
+        >
+          {blurb}
+        </p>
+
+        {/* Enter button */}
+        <div className="pt-1">
+          <span
+            className="inline-flex items-center gap-2.5 rounded px-5 py-2.5 text-[11px] font-bold uppercase tracking-[0.22em] transition-all duration-200 group-hover:brightness-115"
+            style={{
+              background: borderColor,
+              color: "#ffffff",
+            }}
+          >
+            Enter
+            <span className="transition-transform duration-200 ease-out group-hover:translate-x-0.5">→</span>
+          </span>
+        </div>
       </div>
     </Link>
   );
 }
 
-export default function Home() {
-  const quote = pickRandomQuote();
-  // Split brand name to apply drop cap on first letter
-  const [firstLetter, ...rest] = BRAND.name.split("");
+/** Decorative background: scattered diamonds + lightning bolt */
+function BackgroundDecor() {
+  const diamonds = [
+    // Left side — cobalt
+    { x: "4%",  y: "20%", size: 24, color: "rgba(30,112,192,0.60)",  border: true },
+    { x: "6%",  y: "58%", size: 14, color: "rgba(77,168,232,0.35)",  border: true },
+    { x: "2%",  y: "80%", size: 32, color: "rgba(30,112,192,0.22)",  border: true },
+    { x: "11%", y: "40%", size: 10, color: "rgba(77,168,232,0.55)",  border: false },
+    { x: "13%", y: "74%", size: 8,  color: "rgba(30,112,192,0.45)",  border: false },
+    // Right side — ember
+    { x: "87%", y: "22%", size: 22, color: "rgba(184,56,40,0.55)",   border: true },
+    { x: "92%", y: "60%", size: 30, color: "rgba(184,56,40,0.24)",   border: true },
+    { x: "82%", y: "44%", size: 12, color: "rgba(217,90,64,0.48)",   border: true },
+    { x: "95%", y: "78%", size: 10, color: "rgba(217,90,64,0.38)",   border: false },
+    { x: "77%", y: "70%", size: 8,  color: "rgba(184,56,40,0.42)",   border: false },
+  ];
 
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col items-stretch justify-center gap-16 px-5 py-16 sm:px-8 sm:py-24">
-      {/* Hero */}
-      <header className="anim-fade-in flex flex-col items-center gap-7 text-center">
-        {/* Rotating MTG quote eyebrow */}
-        <div className="rule-bookend max-w-lg">
-          <span className="eyebrow text-brass">
-            {quote}
-          </span>
-        </div>
+    <div className="pointer-events-none fixed inset-0 z-0 overflow-hidden" aria-hidden>
+      {/* Lightning bolt — centered, large, very faint */}
+      <svg
+        className="absolute"
+        style={{
+          left: "50%",
+          top: "8%",
+          transform: "translateX(-50%)",
+          width: "min(380px, 55vw)",
+          opacity: 0.07,
+          filter: "blur(1px)",
+        }}
+        viewBox="0 0 120 220"
+        fill="none"
+      >
+        <path
+          d="M72 4L18 112h44L30 216l76-128H62L72 4z"
+          fill="white"
+        />
+      </svg>
 
-        {/* Title — illuminated drop cap on first letter */}
-        <h1 className="anim-ink-bleed relative inline-flex items-baseline justify-center">
-          <span
-            className="storm-display relative leading-[0.85] tracking-[-0.025em] text-foreground"
+      {/* Scattered diamonds */}
+      {diamonds.map((d, i) => (
+        <span
+          key={i}
+          className="absolute"
+          style={{
+            left: d.x,
+            top: d.y,
+            width: d.size,
+            height: d.size,
+            background: d.border ? "transparent" : d.color,
+            border: d.border ? `1.5px solid ${d.color}` : "none",
+            transform: "rotate(45deg)",
+          }}
+        />
+      ))}
+    </div>
+  );
+}
+
+export default function Home() {
+  const quote = pickRandomQuote();
+
+  return (
+    <div className="relative flex w-full flex-1 flex-col">
+      <BackgroundDecor />
+
+      <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-stretch justify-center gap-8 px-5 py-8 sm:gap-10 sm:px-8 sm:py-12">
+        {/* Hero */}
+        <header className="flex flex-col items-center gap-5 text-center">
+          {/* Quote eyebrow — Izzet blue/red rule bookend */}
+          <div className="flex w-full max-w-md items-center gap-3">
+            <span
+              aria-hidden
+              className="h-px flex-1"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent, rgba(30,112,192,0.55) 60%, rgba(184,56,40,0.35) 85%, transparent)",
+              }}
+            />
+            <span
+              className="storm-display-italic shrink-0 text-center text-[15px] leading-snug"
+              style={{ color: "var(--foreground-muted)" }}
+            >
+              {quote}
+            </span>
+            <span
+              aria-hidden
+              className="h-px flex-1"
+              style={{
+                background:
+                  "linear-gradient(90deg, transparent, rgba(184,56,40,0.35) 15%, rgba(30,112,192,0.55) 40%, transparent)",
+              }}
+            />
+          </div>
+
+          <h1
+            className="storm-display font-bold leading-[1] tracking-[-0.03em] text-foreground"
             style={{
-              fontSize: "clamp(3.5rem, 12vw, 8rem)",
-              fontVariationSettings: '"opsz" 144, "SOFT" 50, "WONK" 1',
+              fontSize: "clamp(3rem, 10vw, 6rem)",
+              fontVariationSettings: '"opsz" 144, "SOFT" 20, "WONK" 0',
             }}
           >
-            <span
-              className="storm-display align-baseline text-brass-bright"
-              style={{
-                fontVariationSettings: '"opsz" 144, "SOFT" 100, "WONK" 1',
-                textShadow:
-                  "var(--shadow-dropcap)",
-              }}
-            >
-              {firstLetter}
-            </span>
-            {rest.join("")}
-          </span>
-        </h1>
+            {BRAND.name}
+          </h1>
+          <p
+            className="storm-display-italic text-base leading-relaxed sm:text-lg"
+            style={{
+              color: "var(--foreground-muted)",
+              fontVariationSettings: '"opsz" 144, "SOFT" 40',
+            }}
+          >
+            Guess whether the hidden card&apos;s mana value beats the revealed one.
+          </p>
+        </header>
 
-        {/* Tagline */}
+        {/* Mode cards */}
+        <section className="grid gap-6 md:grid-cols-2">
+          <ModeCard
+            href={ROUTES.daily}
+            badge="Daily"
+            title="Daily Challenge"
+            blurb="One seeded 50-card run per day. Race the clock, climb the leaderboard, prove your curve."
+            accent="brass"
+            meta="50 cards · seeded"
+          />
+          <ModeCard
+            href={ROUTES.survival}
+            badge="Survival"
+            title="Survival"
+            blurb="Endless mode. No timer, no limit. One wrong answer ends the run. How high is your storm count?"
+            accent="moonsilver"
+            meta="Endless"
+          />
+        </section>
+
+        {/* Footer tagline */}
         <p
-          className="storm-display-italic whitespace-nowrap text-base leading-relaxed text-foreground/75 sm:text-lg"
-          style={{ fontVariationSettings: '"opsz" 144, "SOFT" 50' }}
+          className="text-center text-[11px] uppercase tracking-[0.32em]"
+          style={{ color: "var(--muted)", fontFamily: "var(--font-mono)" }}
         >
-          Guess whether the hidden card&apos;s mana value beats the revealed one.
+          How high is your Storm Count?
         </p>
-      </header>
-
-      {/* Mode cards */}
-      <section className="grid gap-7 md:grid-cols-2">
-        <ModeCard
-          href={ROUTES.daily}
-          badge="Daily"
-          title="Daily Challenge"
-          blurb="One seeded 50-card run per day. Race the clock, climb the leaderboard, prove your curve."
-          accent="brass"
-          meta="50 cards · seeded"
-          romanIndex="I"
-          index={0}
-        />
-        <ModeCard
-          href={ROUTES.survival}
-          badge="Survival"
-          title="Survival"
-          blurb="Endless mode. No timer, no limit. One wrong answer ends the run. How high is your storm count?"
-          accent="moonsilver"
-          meta="∞ endless"
-          romanIndex="II"
-          index={1}
-        />
-      </section>
-
-      {/* Decorative footer line */}
-      <div className="storm-mono flex items-center justify-center gap-3 text-[12px] uppercase tracking-[0.28em] text-muted/80">
-        <span aria-hidden className="h-px w-8 bg-gradient-to-r from-transparent to-rule/50" />
-        <span>How high is your Storm Count?</span>
-        <span aria-hidden className="h-px w-8 bg-gradient-to-l from-transparent to-rule/50" />
       </div>
-
     </div>
   );
 }

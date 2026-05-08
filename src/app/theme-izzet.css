@@ -1,10 +1,7 @@
 /* =========================================================================
-   Storm Count — "Izzet Arcanum" themes
-   Two modes: dark (arcane lab at night) + light (blueprint paper / day lab)
-   Toggle by swapping data-theme between "izzet" and "izzet-light" on <html>.
+   Storm Count — "Izzet Arcanum" theme (dark only)
    Spellslinger laboratory. Cold cobalt + ember red. Blueprint grid.
    Activate: add data-theme="izzet" to <html>.
-   Deactivate: remove that attribute.
    ========================================================================= */
 
 [data-theme="izzet"] {
@@ -272,35 +269,38 @@
 }
 
 /* =========================================================================
-   Buttons
+   Buttons — flat, no gradient
    ========================================================================= */
 
 [data-theme="izzet"] .btn-primary {
   color: #ffffff;
-  background: linear-gradient(180deg, #4da8e8, #1e70c0 60%, #0c3668);
-  border-color: rgba(0, 0, 0, 0.4);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.22) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.38) inset,
-    0 8px 18px -10px rgba(30, 112, 192, 0.65);
+  background: #1e70c0;
+  border-color: transparent;
+  box-shadow: none;
 }
 
 [data-theme="izzet"] .btn-primary:hover {
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.28) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.32) inset,
-    0 16px 28px -12px rgba(77, 168, 232, 0.60);
+  background: #2a7fd4;
+  box-shadow: none;
+  filter: none;
+  transform: none;
+}
+
+[data-theme="izzet"] .btn-primary:active {
+  background: #175fa8;
+  filter: none;
 }
 
 [data-theme="izzet"] .btn-ghost {
-  color: #4da8e8;
-  border-color: rgba(74, 157, 224, 0.38);
+  color: #dce6f0;
+  background: rgba(16, 24, 38, 0.6);
+  border-color: rgba(220, 230, 240, 0.28);
 }
 
 [data-theme="izzet"] .btn-ghost:hover {
-  color: #4da8e8;
-  border-color: #4da8e8;
-  background: rgba(30, 112, 192, 0.07);
+  color: #ffffff;
+  border-color: rgba(220, 230, 240, 0.55);
+  background: rgba(30, 112, 192, 0.12);
 }
 
 /* =========================================================================
@@ -320,334 +320,6 @@
     90deg,
     transparent 0%,
     rgba(77, 168, 232, 0.18) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2.6s linear infinite;
-}
-
-/* =========================================================================
-   "Izzet Arcanum" — LIGHT MODE  (data-theme="izzet-light")
-   Blueprint paper + daylit lab. Cobalt + ember on cool off-white.
-   Same accent hues as dark, darkened for contrast against pale surfaces.
-   ========================================================================= */
-
-[data-theme="izzet-light"] {
-  /* Canvas — cool off-white, blueprint tracing paper */
-  --background: #f3f7fc;
-  --background-deep: #e8eef8;
-  --background-soft: #f8fbff;
-
-  /* Lab surfaces — white with faint blue cast */
-  --paper: #ffffff;
-  --paper-2: #f6f9fe;
-  --paper-3: #edf3fb;
-
-  /* Text — deep navy, not pure black */
-  --foreground: #192840;
-  --foreground-muted: #4a6580;
-  --muted: #7a95b0;
-
-  /* Borders — cobalt-tinted on light bg */
-  --border: rgba(30, 112, 192, 0.16);
-  --border-strong: rgba(30, 112, 192, 0.38);
-  --border-subtle: rgba(25, 40, 64, 0.06);
-  --rule: rgba(30, 112, 192, 0.22);
-
-  /* Cobalt — darkened for light-bg contrast */
-  --brass: #1558a8;
-  --brass-bright: #2470c8;
-  --brass-deep: #0b2e60;
-
-  /* Ember — darkened for light-bg contrast */
-  --moonsilver: #96301e;
-  --moonsilver-bright: #b84030;
-  --moonsilver-deep: #5a1a0a;
-
-  /* Danger */
-  --crimson: #c8241e;
-  --crimson-bright: #e04040;
-  --crimson-deep: #7a1a18;
-
-  /* Game signals */
-  --correct: #3a8a2a;
-  --correct-bright: #52a83a;
-  --wrong: var(--crimson);
-
-  /* Surfaces */
-  --surface: rgba(255, 255, 255, 0.7);
-  --surface-2: rgba(246, 249, 254, 0.8);
-  --surface-strong: rgba(232, 238, 248, 0.92);
-
-  /* Legacy aliases */
-  --gold: var(--brass);
-  --gold-bright: var(--brass-bright);
-  --gold-deep: var(--brass-deep);
-  --plasma: var(--moonsilver);
-  --plasma-bright: var(--moonsilver-bright);
-  --plasma-deep: var(--moonsilver-deep);
-  --accent: var(--brass);
-
-  /* Gradient tokens */
-  /* Rule: blue-to-red split — same Izzet signature as dark mode */
-  --grad-rule: linear-gradient(90deg, transparent 0%, rgba(21,88,168,0.48) 28%, rgba(21,88,168,0.18) 46%, rgba(150,48,30,0.22) 60%, rgba(150,48,30,0.42) 76%, transparent 100%);
-  --grad-logo-glow: radial-gradient(circle, rgba(36,112,200,0.45), transparent 70%);
-  --grad-card-wash-primary: linear-gradient(90deg, transparent, rgba(36,112,200,0.55), transparent);
-  --grad-card-wash-secondary: linear-gradient(90deg, transparent, rgba(184,64,48,0.45), transparent);
-  --shadow-dropcap: 0 0 20px rgba(21,88,168,0.30), 0 0 48px rgba(30,112,192,0.14);
-
-  /* CardDisplay — anchor=cobalt (darkened for light bg), mystery=ember */
-  --grad-orb-anchor: radial-gradient(circle at 35% 30%, #4da8e8, #1558a8 80%);
-  --grad-orb-mystery: radial-gradient(circle at 35% 30%, #d95a40, #963020 80%);
-  --grad-halo-anchor: radial-gradient(circle, rgba(36,112,200,0.48), transparent 70%);
-  --grad-halo-mystery: radial-gradient(circle, rgba(184,64,48,0.42), transparent 70%);
-  --grad-card-bg-anchor: radial-gradient(ellipse at 50% 30%, rgba(30,112,192,0.18), transparent 65%);
-  --grad-card-bg-mystery: radial-gradient(ellipse at 50% 30%, rgba(150,48,30,0.16), transparent 65%);
-  --border-art-window: rgba(30, 112, 192, 0.22);
-  --bg-art-fallback: linear-gradient(135deg, #edf3fb 0%, #f0f4fc 50%, #f5f8ff 100%);
-}
-
-/* -------------------------------------------------------------------------
-   Light atmosphere — morning lab, daylight through tall windows
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] .atmosphere-root {
-  background: var(--background-deep);
-}
-
-/* Soft blue wash from above, warm ember base — stronger for light mode */
-[data-theme="izzet-light"] .atmosphere-root::before {
-  background:
-    radial-gradient(ellipse 120% 70% at 50% -15%, rgba(30, 112, 192, 0.18), transparent 55%),
-    radial-gradient(ellipse 80% 50% at 50% 115%, rgba(150, 48, 30, 0.12), transparent 58%),
-    radial-gradient(ellipse 60% 40% at 15% 40%, rgba(30, 112, 192, 0.08), transparent 60%),
-    radial-gradient(ellipse 45% 35% at 88% 55%, rgba(150, 48, 30, 0.06), transparent 60%);
-}
-
-/* Blueprint grid — more visible on light bg, still very subtle */
-[data-theme="izzet-light"] .atmosphere-root::after {
-  background-image:
-    repeating-linear-gradient(
-      90deg,
-      rgba(30, 112, 192, 0.055) 0,
-      rgba(30, 112, 192, 0.055) 1px,
-      transparent 1px,
-      transparent 44px
-    ),
-    repeating-linear-gradient(
-      0deg,
-      rgba(30, 112, 192, 0.038) 0,
-      rgba(30, 112, 192, 0.038) 1px,
-      transparent 1px,
-      transparent 44px
-    ),
-    repeating-linear-gradient(
-      45deg,
-      rgba(25, 40, 64, 0.018) 0,
-      rgba(25, 40, 64, 0.018) 1px,
-      transparent 1px,
-      transparent 14px
-    );
-  mix-blend-mode: multiply;
-}
-
-/* Conic rays — very soft on light bg */
-[data-theme="izzet-light"] .atmosphere-rays::before,
-[data-theme="izzet-light"] .atmosphere-rays::after {
-  background: conic-gradient(
-    from 0deg,
-    rgba(30, 112, 192, 0.04) 0deg,
-    transparent 5deg,
-    transparent 14deg,
-    rgba(30, 112, 192, 0.04) 18deg,
-    transparent 22deg,
-    transparent 32deg,
-    rgba(150, 48, 30, 0.025) 36deg,
-    transparent 40deg
-  );
-  filter: blur(20px);
-  opacity: 0.4;
-}
-
-/* Lighter vignette on light bg */
-[data-theme="izzet-light"] .atmosphere-vignette {
-  background: radial-gradient(
-    ellipse 100% 80% at 50% 50%,
-    transparent 40%,
-    rgba(30, 60, 100, 0.08) 100%
-  );
-}
-
-/* -------------------------------------------------------------------------
-   Light text, selection, scrollbar
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] ::selection {
-  background: rgba(30, 112, 192, 0.20);
-  color: #1558a8;
-}
-
-[data-theme="izzet-light"] * {
-  scrollbar-color: rgba(30, 112, 192, 0.28) transparent;
-}
-
-/* -------------------------------------------------------------------------
-   Typography
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] .eyebrow {
-  color: var(--brass);
-}
-
-[data-theme="izzet-light"] .dropcap {
-  color: #2470c8;
-  text-shadow: var(--shadow-dropcap);
-}
-
-[data-theme="izzet-light"] .brass-text { color: #2470c8; }
-[data-theme="izzet-light"] .storm-gold  { color: var(--brass); }
-[data-theme="izzet-light"] .gold-gradient  { color: #2470c8; }
-[data-theme="izzet-light"] .plasma-gradient { color: #b84030; }
-
-/* -------------------------------------------------------------------------
-   Card surfaces — bright lab desk, clean white with blue hint
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] .codex {
-  background:
-    radial-gradient(circle at 20% 8%, rgba(30, 112, 192, 0.04), transparent 40%),
-    radial-gradient(circle at 80% 92%, rgba(150, 48, 30, 0.025), transparent 40%),
-    linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
-  border-color: var(--border-subtle);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 8px 24px -12px rgba(30, 60, 100, 0.14),
-    0 2px 8px -4px rgba(30, 60, 100, 0.08);
-}
-
-[data-theme="izzet-light"] .codex-strong {
-  background:
-    radial-gradient(circle at 20% 8%, rgba(30, 112, 192, 0.06), transparent 40%),
-    linear-gradient(180deg, var(--paper-2) 0%, var(--paper-3) 60%, var(--paper-2) 100%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.95) inset,
-    0 16px 40px -16px rgba(30, 60, 100, 0.18);
-}
-
-[data-theme="izzet-light"] .glass {
-  background:
-    radial-gradient(circle at 20% 8%, rgba(30, 112, 192, 0.04), transparent 40%),
-    linear-gradient(180deg, var(--paper) 0%, var(--paper-2) 100%);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.9) inset,
-    0 8px 24px -12px rgba(30, 60, 100, 0.12);
-}
-
-[data-theme="izzet-light"] .glass-strong {
-  background:
-    radial-gradient(circle at 20% 8%, rgba(30, 112, 192, 0.06), transparent 40%),
-    linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 100%);
-}
-
-/* -------------------------------------------------------------------------
-   Rim gradients
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] .rim-brass::before,
-[data-theme="izzet-light"] .glass-rim::before,
-[data-theme="izzet-light"] .glass-rim-gold::before {
-  background: linear-gradient(
-    180deg,
-    rgba(36, 112, 200, 0.50) 0%,
-    rgba(11, 46, 96, 0.12) 50%,
-    rgba(36, 112, 200, 0.28) 100%
-  );
-}
-
-[data-theme="izzet-light"] .rim-moonsilver::before,
-[data-theme="izzet-light"] .glass-rim-plasma::before {
-  background: linear-gradient(
-    180deg,
-    rgba(184, 64, 48, 0.45) 0%,
-    rgba(90, 26, 10, 0.12) 50%,
-    rgba(184, 64, 48, 0.26) 100%
-  );
-}
-
-/* -------------------------------------------------------------------------
-   Rules / dividers
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] .rule-brass {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(21, 88, 168, 0.48) 28%,
-    rgba(21, 88, 168, 0.18) 46%,
-    rgba(150, 48, 30, 0.22) 60%,
-    rgba(150, 48, 30, 0.42) 76%,
-    transparent 100%
-  );
-}
-
-[data-theme="izzet-light"] .rule-bookend::before,
-[data-theme="izzet-light"] .rule-bookend::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(21, 88, 168, 0.44) 28%,
-    rgba(21, 88, 168, 0.16) 46%,
-    rgba(150, 48, 30, 0.18) 60%,
-    rgba(150, 48, 30, 0.38) 76%,
-    transparent 100%
-  );
-}
-
-/* -------------------------------------------------------------------------
-   Buttons
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] .btn-primary {
-  color: #ffffff;
-  background: linear-gradient(180deg, #2470c8, #1558a8 60%, #0b2e60);
-  border-color: rgba(11, 46, 96, 0.3);
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.28) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.22) inset,
-    0 8px 18px -10px rgba(21, 88, 168, 0.50);
-}
-
-[data-theme="izzet-light"] .btn-primary:hover {
-  box-shadow:
-    0 1px 0 rgba(255, 255, 255, 0.32) inset,
-    0 -1px 0 rgba(0, 0, 0, 0.18) inset,
-    0 16px 28px -12px rgba(36, 112, 200, 0.45);
-}
-
-[data-theme="izzet-light"] .btn-ghost {
-  color: #1558a8;
-  border-color: rgba(30, 112, 192, 0.34);
-}
-
-[data-theme="izzet-light"] .btn-ghost:hover {
-  color: #1558a8;
-  border-color: #2470c8;
-  background: rgba(30, 112, 192, 0.06);
-}
-
-/* -------------------------------------------------------------------------
-   Focus & shimmer
-   ------------------------------------------------------------------------- */
-
-[data-theme="izzet-light"] :where(a, button, input, textarea, select):focus-visible {
-  outline-color: #2470c8;
-}
-
-[data-theme="izzet-light"] .shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(36, 112, 200, 0.14) 50%,
     transparent 100%
   );
   background-size: 200% 100%;

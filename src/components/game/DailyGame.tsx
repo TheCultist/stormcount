@@ -17,6 +17,28 @@ function formatTime(ms: number): string {
   return m > 0 ? `${m}m ${s}s` : `${s}s`;
 }
 
+/**
+ * Build Scryfall search URLs that show all cards in the daily set.
+ *
+ * Uses exact-name matching (`!"Name"`) joined with OR. Scryfall silently
+ * truncates long OR chains (51 terms exceeds its limit), so we split the list
+ * into chunks of at most MAX_PER_QUERY cards and return one URL per chunk.
+ *
+ * Note: Scryfall's `id:` filter is for color identity, not card UUIDs.
+ * The UUID-based `/cards/collection` endpoint is POST-only and not linkable.
+ */
+const MAX_PER_QUERY = 26;
+
+function buildScryfallCardUrls(cards: import("@/lib/types").MtgCard[]): string[] {
+  const urls: string[] = [];
+  for (let i = 0; i < cards.length; i += MAX_PER_QUERY) {
+    const chunk = cards.slice(i, i + MAX_PER_QUERY);
+    const query = chunk.map((c) => `!"${c.name}"`).join(" or ");
+    urls.push(`https://scryfall.com/search?q=${encodeURIComponent(query)}`);
+  }
+  return urls;
+}
+
 // ── Rules data (daily-specific) ────────────────────────────────────────────
 
 const RULES = [
@@ -157,11 +179,60 @@ function RulesPanel() {
   );
 }
 
+// ── ScryfallCardLinks ──────────────────────────────────────────────────────
+
+/**
+ * Renders one or two "View on Scryfall" links.
+ * Scryfall silently truncates long OR chains, so we cap each URL at
+ * MAX_PER_QUERY (25) cards to ensure every card appears in the results.
+ */
+function ScryfallCardLinks({ cards }: { cards: import("@/lib/types").MtgCard[] }) {
+  const urls = buildScryfallCardUrls(cards);
+  if (urls.length === 0) return null;
+
+  if (urls.length === 1) {
+    return (
+      <a
+        href={urls[0]}
+        target="_blank"
+        rel="noopener noreferrer"
+        className="storm-mono text-[11px] uppercase tracking-[0.18em] text-foreground/55 transition-colors hover:text-brass-bright"
+      >
+        View today&apos;s cards on Scryfall ↗
+      </a>
+    );
+  }
+
+  return (
+    <div className="flex flex-wrap items-center justify-center gap-x-2 gap-y-1">
+      <span className="storm-mono text-[11px] uppercase tracking-[0.18em] text-foreground/45">
+        Today&apos;s cards on Scryfall:
+      </span>
+      {urls.map((url, i) => {
+        const start = i * MAX_PER_QUERY + 1;
+        const end = Math.min((i + 1) * MAX_PER_QUERY, cards.length);
+        return (
+          <a
+            key={url}
+            href={url}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="storm-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-brass transition-colors hover:text-brass-bright"
+          >
+            {start}–{end} ↗
+          </a>
+        );
+      })}
+    </div>
+  );
+}
+
 // ── DailyGame ─────────────────────────────────────────────────────────────
 
 export default function DailyGame() {
   const {
     status,
+    cards,
     practiceMode,
     scoreUnsaved,
     scoreAutoSaved,
@@ -267,28 +338,32 @@ export default function DailyGame() {
         {/* Header */}
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="eyebrow flex items-center gap-2.5">
-            <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright" />
+            <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass" />
             Daily Challenge
             <span className="text-foreground/40">·</span>
             <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{date}</span>
           </p>
           <h1
-            className="storm-display text-4xl font-extrabold leading-[0.95] tracking-[-0.02em] text-foreground"
-            style={{ fontVariationSettings: '"opsz" 144, "SOFT" 50, "WONK" 1' }}
+            className="storm-display font-extrabold leading-[0.95] text-foreground"
+            style={{
+              fontSize: "clamp(2.2rem, 8vw, 3.5rem)",
+              fontVariationSettings: '"opsz" 144, "SOFT" 50, "WONK" 1',
+              letterSpacing: "-0.02em",
+            }}
           >
             Already played today
           </h1>
-          <p className="storm-display-italic text-base leading-relaxed text-foreground/70">
+          <p className="storm-display-italic text-base leading-relaxed text-foreground/65">
             Come back tomorrow for a fresh challenge.
           </p>
         </div>
 
         {/* Practice warning */}
-        <div className="w-full rounded-md border border-rule/40 bg-background-deep/50 px-5 py-4">
-          <p className="storm-mono text-[11px] leading-relaxed text-foreground/60">
-            <span className="mr-2 text-brass-bright">ⓘ</span>
+        <div className="w-full rounded border border-rule/30 bg-background-deep/60 px-5 py-4">
+          <p className="storm-mono text-[12px] leading-relaxed text-foreground/65">
+            <span className="mr-2" style={{ color: "var(--brass)" }}>ⓘ</span>
             Playing again is for practice only. Your score will{" "}
-            <span className="text-foreground/90">not</span> be recorded on the leaderboard.
+            <strong className="font-semibold text-foreground/90">not</strong> be recorded on the leaderboard.
           </p>
         </div>
 
@@ -306,13 +381,18 @@ export default function DailyGame() {
           </Link>
         </div>
 
-        {/* Leaderboard link */}
-        <Link
-          href={ROUTES.leaderboard}
-          className="storm-mono text-[11px] uppercase tracking-[0.2em] text-foreground/55 underline-offset-4 hover:text-brass-bright hover:underline transition-colors"
-        >
-          View today&apos;s leaderboard →
-        </Link>
+        {/* Leaderboard link + view cards */}
+        <div className="flex flex-col items-center gap-3">
+          <Link
+            href={ROUTES.leaderboard}
+            className="storm-mono text-[11px] uppercase tracking-[0.18em] text-foreground/55 transition-colors hover:text-foreground"
+          >
+            View today&apos;s leaderboard →
+          </Link>
+          {cards.length > 0 && (
+            <ScryfallCardLinks cards={cards} />
+          )}
+        </div>
       </div>
     );
   }
@@ -424,6 +504,10 @@ export default function DailyGame() {
                 Play Survival
               </Link>
             </div>
+
+            {cards.length > 0 && (
+              <ScryfallCardLinks cards={cards} />
+            )}
           </div>
         </section>
       </div>
@@ -432,7 +516,7 @@ export default function DailyGame() {
 
   // ── playing / idle / revealed ─────────────────────────────────────────────
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-5 py-4 sm:gap-5 sm:px-8 sm:py-5">
       {/* Header */}
       <header className="anim-fade-in flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
         <div className="flex flex-col gap-2.5">
@@ -475,11 +559,29 @@ export default function DailyGame() {
         </div>
       </header>
 
-      {/* Tie-rule hint */}
-      <p className="storm-mono inline-flex w-fit items-center gap-2.5 self-start border border-rule/40 bg-paper/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-foreground/80">
-        <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright" />
-        Tie rule · equal mv counts as Higher or Equal
-      </p>
+      {/* Tie-rule hint + contextual status notice (same flex slot, no extra gap) */}
+      <div className="flex flex-col gap-1.5 self-start">
+        <p className="storm-mono inline-flex w-fit items-center gap-2.5 border border-rule/40 bg-paper/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-foreground/80">
+          <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright" />
+          Tie rule · equal mv counts as Higher or Equal
+        </p>
+        {status === "idle" && practiceMode && (
+          <p className="storm-mono text-[10px] uppercase tracking-[0.18em] text-foreground/50 anim-fade-in">
+            Practice mode · score won&apos;t be recorded
+          </p>
+        )}
+        {status === "idle" && !practiceMode && (
+          <p className="storm-mono text-[10px] uppercase tracking-[0.18em] text-foreground/50 anim-fade-in">
+            Make your first guess to start the timer
+          </p>
+        )}
+        {(status === "playing" || status === "revealed") && !practiceMode && (
+          <p className="storm-mono inline-flex items-center gap-1.5 text-[10px] uppercase tracking-[0.18em] text-foreground/45 anim-fade-in">
+            <span aria-hidden className="text-[9px]">ⓘ</span>
+            Leaving this page will submit your current score
+          </p>
+        )}
+      </div>
 
       {/* Versus arena */}
       <section className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-center lg:gap-8">
@@ -514,22 +616,7 @@ export default function DailyGame() {
         />
       </section>
 
-      {/* First-guess prompt (idle state) */}
-      {status === "idle" && (
-        <p className="storm-mono text-center text-[11px] uppercase tracking-[0.22em] text-foreground/60 anim-fade-in">
-          {practiceMode
-            ? "Practice mode · score won't be recorded"
-            : "Make your first guess to start the timer"}
-        </p>
-      )}
 
-      {/* Auto-submit notice */}
-      {(status === "playing" || status === "revealed") && !practiceMode && (
-        <p className="storm-mono mx-auto flex w-fit items-center gap-2 text-center text-[10px] uppercase tracking-[0.18em] text-foreground/50 anim-fade-in">
-          <span aria-hidden className="text-[9px]">ⓘ</span>
-          Leaving this page will submit your current score
-        </p>
-      )}
     </div>
   );
 }

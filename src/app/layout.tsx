@@ -1,12 +1,12 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import Script from "next/script";
 import "./globals.css";
 import "./theme-izzet.css";
 import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import CookieBanner from "@/components/layout/CookieBanner";
-import { ThemeProvider, themeScript } from "@/components/theme/ThemeProvider";
 import { BRAND } from "@/lib/constants";
 
 const fontDisplay = Fraunces({
@@ -28,13 +28,57 @@ const fontMono = Geist_Mono({
   weight: ["400", "500", "700"],
 });
 
+const BASE_URL = `https://${BRAND.domain}`;
+const defaultTitle = `${BRAND.name} — ${BRAND.tagline}`;
+const defaultDescription =
+  "Storm Count is a free Magic: The Gathering guessing game. Each round shows two MTG cards — guess whether the mystery card's mana value is higher or lower. Daily challenges, survival mode, and global leaderboards.";
+
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export const metadata: Metadata = {
-  title: `${BRAND.name} — ${BRAND.tagline}`,
-  description:
-    "Storm Count: a Magic: The Gathering higher/lower mana value guessing game.",
+  metadataBase: new URL(BASE_URL),
+  title: {
+    default: defaultTitle,
+    template: `%s | ${BRAND.name}`,
+  },
+  description: defaultDescription,
+  keywords: [
+    "Magic the Gathering game",
+    "MTG guessing game",
+    "MTG higher lower",
+    "mana value game",
+    "Magic the Gathering daily challenge",
+    "Storm Count",
+    "MTG trivia",
+    "Magic card game",
+  ],
+  openGraph: {
+    type: "website",
+    siteName: BRAND.name,
+    title: defaultTitle,
+    description: defaultDescription,
+    url: BASE_URL,
+    images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: `${BRAND.name} — ${BRAND.tagline}` }],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: defaultTitle,
+    description: defaultDescription,
+    images: ["/opengraph-image.png"],
+  },
   icons: {
     icon: "/logo.png",
+    shortcut: "/logo.png",
     apple: "/logo.png",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: { index: true, follow: true },
   },
 };
 
@@ -49,24 +93,53 @@ export default function RootLayout({
         lang="en"
         data-theme="izzet"
         className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable} h-full antialiased`}
-        suppressHydrationWarning
       >
-        <head>
-          {/* Runs before paint — prevents flash of wrong theme */}
-          <script dangerouslySetInnerHTML={{ __html: themeScript }} />
-        </head>
         <body className="relative flex min-h-full flex-col text-foreground">
-          <ThemeProvider>
-            {/* Atmosphere layers */}
-            <div className="atmosphere-root" aria-hidden />
-            <div className="atmosphere-rays" aria-hidden />
-            <div className="atmosphere-vignette" aria-hidden />
+          <Script
+            id="schema-org"
+            type="application/ld+json"
+            dangerouslySetInnerHTML={{
+              __html: JSON.stringify({
+                "@context": "https://schema.org",
+                "@graph": [
+                  {
+                    "@type": "WebSite",
+                    "@id": `${BASE_URL}/#website`,
+                    name: BRAND.name,
+                    url: BASE_URL,
+                    description: defaultDescription,
+                    publisher: { "@id": `${BASE_URL}/#organization` },
+                  },
+                  {
+                    "@type": "Organization",
+                    "@id": `${BASE_URL}/#organization`,
+                    name: BRAND.name,
+                    url: BASE_URL,
+                    logo: `${BASE_URL}/logo.png`,
+                  },
+                  {
+                    "@type": "SoftwareApplication",
+                    "@id": `${BASE_URL}/#app`,
+                    name: BRAND.name,
+                    url: BASE_URL,
+                    applicationCategory: "GameApplication",
+                    operatingSystem: "Any",
+                    description: defaultDescription,
+                    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
+                  },
+                ],
+              }),
+            }}
+          />
+          {/* Atmosphere layers */}
+          <div className="atmosphere-root" aria-hidden />
+          <div className="atmosphere-rays" aria-hidden />
+          <div className="atmosphere-vignette" aria-hidden />
 
-            <NavBar />
-            <main className="relative flex flex-1 flex-col">{children}</main>
-            <Footer />
-            <CookieBanner />
-          </ThemeProvider>
+          <NavBar />
+          <main className="relative flex flex-1 flex-col">{children}</main>
+          <Footer />
+          <CookieBanner />
         </body>
       </html>
     </ClerkProvider>

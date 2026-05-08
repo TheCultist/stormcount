@@ -170,7 +170,7 @@ export default function SurvivalGame() {
 
   // ── playing / revealed ───────────────────────────────────────────────────
   return (
-    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
+    <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-5 py-4 sm:gap-5 sm:px-8 sm:py-5">
       {/* Header */}
       <header className="anim-fade-in flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
         <div className="flex flex-col gap-2.5">
@@ -289,6 +289,7 @@ function ActionButton({
   disabled?: boolean;
 }) {
   const { glyph, labelFull, labelShort, kbd } = ACTION_CONFIG[direction];
+  const isLower = direction === "lower";
 
   return (
     <button
@@ -296,29 +297,36 @@ function ActionButton({
       onClick={onClick}
       disabled={disabled}
       aria-label={labelFull}
-      className="codex rim-brass group relative isolate flex flex-1 items-center justify-center gap-3 overflow-hidden rounded-md px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40 lg:w-48 lg:flex-none lg:justify-between lg:px-5 lg:py-3"
+      className={`codex ${isLower ? "rim-moonsilver" : "rim-brass"} group relative isolate flex flex-1 items-center justify-center gap-3 overflow-hidden rounded-md px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40 lg:w-48 lg:flex-none lg:justify-between lg:px-5 lg:py-3`}
     >
       {/* Hover wash */}
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(232,193,129,0.16), transparent 70%)",
+          background: isLower
+            ? "radial-gradient(ellipse at center, rgba(180,60,40,0.18), transparent 70%)"
+            : "radial-gradient(ellipse at center, rgba(232,193,129,0.16), transparent 70%)",
         }}
       />
 
       {/* Glyph stamp */}
       <span
         aria-hidden
-        className="storm-display flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-brass/40 bg-paper-3/60 text-sm text-brass-bright transition-colors duration-300 group-hover:border-brass-bright group-hover:text-brass-bright"
+        className={`storm-display flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border text-sm transition-colors duration-300 ${
+          isLower
+            ? "border-moonsilver/40 bg-paper-3/60 text-moonsilver-bright group-hover:border-moonsilver-bright group-hover:text-moonsilver-bright"
+            : "border-brass/40 bg-paper-3/60 text-brass-bright group-hover:border-brass-bright group-hover:text-brass-bright"
+        }`}
       >
         {glyph}
       </span>
 
       {/* Label — short on mobile, full on desktop */}
       <span
-        className="storm-display text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground transition-colors duration-300 group-hover:text-brass-bright lg:flex-1"
+        className={`storm-display text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground transition-colors duration-300 lg:flex-1 ${
+          isLower ? "group-hover:text-moonsilver-bright" : "group-hover:text-brass-bright"
+        }`}
         style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
       >
         <span className="lg:hidden">{labelShort}</span>

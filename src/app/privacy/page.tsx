@@ -3,15 +3,20 @@ import Link from "next/link";
 import { BRAND, ROUTES } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `Privacy Policy — ${BRAND.name}`,
+  title: "Privacy Policy",
   description:
     "Storm Count privacy policy. What data we collect, how we use it, and your rights under GDPR. Covers Clerk authentication, game scores, cookies, and third-party services.",
   openGraph: {
     title: `Privacy Policy | ${BRAND.name}`,
-    description:
-      "How Storm Count handles your data, authentication, and cookies.",
+    description: "How Storm Count handles your data, authentication, and cookies.",
     url: `https://${BRAND.domain}/privacy`,
   },
+  twitter: {
+    card: "summary",
+    title: `Privacy Policy | ${BRAND.name}`,
+    description: "How Storm Count handles your data, authentication, and cookies.",
+  },
+  robots: { index: true, follow: false },
 };
 
 function Section({

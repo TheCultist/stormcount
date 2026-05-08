@@ -6,7 +6,6 @@ import { usePathname } from "next/navigation";
 import { useState, useEffect } from "react";
 import { SignInButton, UserButton, useUser } from "@clerk/nextjs";
 import { ROUTES, BRAND } from "@/lib/constants";
-import { ThemeToggle } from "@/components/theme/ThemeToggle";
 
 const NAV_LINKS = [
   { href: ROUTES.daily, label: "Daily" },
@@ -97,7 +96,6 @@ export default function NavBar() {
 
         {/* Right controls */}
         <div className="flex items-center gap-3">
-          <ThemeToggle />
           {mounted && isLoaded && (
             isSignedIn ? (
               <UserButton

@@ -70,19 +70,23 @@ type GuessButtonProps = {
   disabled?: boolean;
 };
 
+
 function GuessButton({
+  direction,
   label,
   glyph,
   kbd,
   onClick,
   disabled,
 }: GuessButtonProps) {
+  const isLower = direction === "lower";
+
   return (
     <button
       type="button"
       onClick={onClick}
       disabled={disabled}
-      className="codex rim-brass group relative isolate flex flex-1 items-center justify-between gap-4 overflow-hidden rounded-md px-7 py-5 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40"
+      className={`codex ${isLower ? "rim-moonsilver" : "rim-brass"} group relative isolate flex flex-1 items-center justify-between gap-4 overflow-hidden rounded-md px-7 py-5 text-left transition-all duration-300 ease-out hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40`}
       aria-label={label}
     >
       {/* Hover wash */}
@@ -90,8 +94,9 @@ function GuessButton({
         aria-hidden
         className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
         style={{
-          background:
-            "radial-gradient(ellipse at center, rgba(232,193,129,0.16), transparent 70%)",
+          background: isLower
+            ? "radial-gradient(ellipse at center, rgba(180,60,40,0.18), transparent 70%)"
+            : "radial-gradient(ellipse at center, rgba(232,193,129,0.16), transparent 70%)",
         }}
       />
 
@@ -99,12 +104,18 @@ function GuessButton({
         {/* Glyph stamp */}
         <span
           aria-hidden
-          className="storm-display flex h-10 w-10 items-center justify-center rounded-sm border border-brass/40 bg-paper-3/60 text-base text-brass-bright transition-colors duration-300 group-hover:border-brass-bright group-hover:text-brass-bright"
+          className={`storm-display flex h-10 w-10 items-center justify-center rounded-sm border text-base transition-colors duration-300 ${
+            isLower
+              ? "border-moonsilver/40 bg-paper-3/60 text-moonsilver-bright group-hover:border-moonsilver-bright group-hover:text-moonsilver-bright"
+              : "border-brass/40 bg-paper-3/60 text-brass-bright group-hover:border-brass-bright group-hover:text-brass-bright"
+          }`}
         >
           {glyph}
         </span>
         <span
-          className="storm-display text-[15px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors duration-300 group-hover:text-brass-bright"
+          className={`storm-display text-[15px] font-semibold uppercase tracking-[0.18em] text-foreground transition-colors duration-300 ${
+            isLower ? "group-hover:text-moonsilver-bright" : "group-hover:text-brass-bright"
+          }`}
           style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
         >
           {label}

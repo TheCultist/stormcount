@@ -64,8 +64,8 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
             </h3>
           </div>
 
-          {/* Mana-cost orb — circular, MTG-pip-inspired */}
-          <ManaOrb isMystery={isMystery} cmc={card?.cmc} />
+          {/* Mana-value badge — flat chip, no gradient */}
+          <ManaBadge isMystery={isMystery} cmc={card?.cmc} />
         </header>
 
         {/* Art window — slightly inset, hairline frame */}
@@ -139,86 +139,31 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
           </div>
         </div>
 
-        {/* Type-line bar — narrow strip, MTG-card-frame echo */}
-        <div className="mt-3 flex items-center justify-between gap-3 border-y border-rule/50 bg-paper-3/40 px-4 py-2">
-          <p className="storm-mono truncate text-[10px] uppercase tracking-[0.18em] text-foreground/70">
-            {card?.type_line ?? "—"}
-          </p>
-          <span
-            aria-hidden
-            className={`h-1 w-1 rotate-45 ${
-              isMystery ? "bg-moonsilver/70" : "bg-brass/70"
-            }`}
-          />
-        </div>
-
-        {/* Collector-info footer — hint of MTG card metadata row */}
-        <footer className="flex items-center justify-between px-4 py-2.5">
-          <span className="storm-mono text-[9px] uppercase tracking-[0.22em] text-muted/60">
-            {isMystery ? "—  /  ???" : `mv  /  ${card?.cmc ?? "—"}`}
-          </span>
-          <span className="storm-display-italic text-[10px] text-muted/60">
-            stormcount
-          </span>
-        </footer>
+        {/* bottom padding so art doesn't butt up against the rim */}
+        <div className="pb-3" />
       </article>
     </div>
   );
 }
 
 /**
- * Mana-cost orb — circular pip echoing MTG mana symbols.
- * Anchor: solid brass with engraved CMC numeral.
- * Mystery: moonsilver ring with shimmering ??? legend.
+ * Mana-value badge — flat rectangular chip, no gradient, no halo.
+ * Anchor: solid brass/cobalt, shows the CMC numeral.
+ * Mystery: solid moonsilver/ember, shows "?" until revealed.
  */
-function ManaOrb({ isMystery, cmc }: { isMystery: boolean; cmc?: number }) {
+function ManaBadge({ isMystery, cmc }: { isMystery: boolean; cmc?: number }) {
   return (
     <div
-      className="relative flex h-12 w-12 shrink-0 items-center justify-center rounded-full"
+      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+        isMystery ? "bg-moonsilver" : "bg-brass"
+      }`}
       aria-label={isMystery ? "Hidden mana value" : `Mana value ${cmc ?? "—"}`}
     >
-      {/* Outer halo — theme-aware */}
-      <span
-        aria-hidden
-        className="absolute inset-[-6px] rounded-full opacity-70 blur-md"
-        style={{
-          background: isMystery
-            ? "var(--grad-halo-mystery)"
-            : "var(--grad-halo-anchor)",
-        }}
-      />
-
-      {/* Pip body — theme-aware */}
-      <span
-        aria-hidden
-        className="absolute inset-0 rounded-full"
-        style={{
-          background: isMystery
-            ? "var(--grad-orb-mystery)"
-            : "var(--grad-orb-anchor)",
-          boxShadow:
-            "0 1px 0 rgba(255,255,255,0.35) inset, 0 -1px 0 rgba(0,0,0,0.4) inset, 0 4px 8px -2px rgba(0,0,0,0.6)",
-        }}
-      />
-
-      {/* Numeral / sigil */}
       {isMystery ? (
-        <span className="storm-mono relative text-[11px] font-bold tracking-tight text-background-deep">
-          <span
-            className="bg-clip-text text-transparent"
-            style={{
-              backgroundImage:
-                "linear-gradient(90deg, rgba(7,6,12,0.4) 0%, rgba(7,6,12,1) 50%, rgba(7,6,12,0.4) 100%)",
-              backgroundSize: "200% 100%",
-              animation: "shimmer 2.4s linear infinite",
-            }}
-          >
-            ???
-          </span>
-        </span>
+        <span className="storm-mono text-[13px] font-bold leading-none text-white/80">?</span>
       ) : (
         <span
-          className="storm-display relative text-base font-extrabold leading-none text-background-deep"
+          className="storm-display text-base font-extrabold leading-none text-white"
           style={{ fontVariationSettings: '"opsz" 96, "WONK" 0' }}
         >
           {cmc ?? "—"}

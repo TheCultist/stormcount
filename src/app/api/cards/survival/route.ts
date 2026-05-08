@@ -13,6 +13,17 @@ const SCRYFALL_USER_AGENT =
 // Scryfall returns ~175 cards per page.
 const SCRYFALL_PAGE_SIZE = 175;
 
+/**
+ * Sort orders used to sample from different "dimensions" of the catalog.
+ *
+ * Each order sorts the 15k-card pool completely differently, so a random
+ * page from order=name and a random page from order=edhrec are drawn from
+ * entirely independent parts of the card space — giving genuine variety.
+ * Two dimensions keeps survival at 3 total API calls (1 probe + 2 samples),
+ * which is well within Scryfall's 2 req/sec rate limit.
+ */
+const SORT_DIMENSIONS = ["name", "edhrec"] as const;
+
 function toMtgCard(card: ScryfallCard): MtgCard {
   const imageUris = card.image_uris ?? card.card_faces?.[0]?.image_uris;
   return {
@@ -34,10 +45,14 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
-async function scryfallSearch(page: number): Promise<ScryfallSearchResponse> {
+async function scryfallSearch(
+  page: number,
+  order: string = "name",
+): Promise<ScryfallSearchResponse> {
   const url = new URL(`${SCRYFALL_BASE_URL}/cards/search`);
   url.searchParams.set("q", `prefer:best ${SURVIVAL_SCRYFALL_QUERY}`);
   url.searchParams.set("unique", "cards");
+  url.searchParams.set("order", order);
   url.searchParams.set("page", page.toString());
 
   const res = await fetch(url.toString(), {
@@ -73,18 +88,32 @@ export async function GET(req: NextRequest) {
   const excluded = new Set(excludeParam ? excludeParam.split(",") : []);
 
   try {
-    // Step 1 — fetch page 1 to discover total pool size.
-    const firstPage = await scryfallSearch(1);
-    const totalCards = firstPage.total_cards;
-    const maxPage = Math.max(1, Math.ceil(totalCards / SCRYFALL_PAGE_SIZE));
+    // Step 1 — probe page 1 to discover total pool size (discard card data).
+    const probePage = await scryfallSearch(1, "name");
+    const maxPage = Math.max(
+      1,
+      Math.ceil(probePage.total_cards / SCRYFALL_PAGE_SIZE),
+    );
 
-    // Step 2 — pick a random page and fetch it (skip extra call if page 1 chosen).
-    const randomPage = Math.floor(Math.random() * maxPage) + 1;
-    const pageData =
-      randomPage === 1 ? firstPage : await scryfallSearch(randomPage);
+    // Step 2 — fetch one random page per sort dimension sequentially.
+    // Different orderings produce completely independent card neighborhoods,
+    // so the merged pool spans multiple parts of the catalog.
+    const seen = new Set<string>();
+    const pool: ScryfallCard[] = [];
 
-    // Step 3 — shuffle, filter, slice.
-    const shuffled = shuffle([...pageData.data]);
+    for (const order of SORT_DIMENSIONS) {
+      const randomPage = Math.floor(Math.random() * maxPage) + 1;
+      const pageData = await scryfallSearch(randomPage, order);
+      for (const card of pageData.data) {
+        if (!seen.has(card.id)) {
+          seen.add(card.id);
+          pool.push(card);
+        }
+      }
+    }
+
+    // Step 3 — shuffle, filter excluded, slice.
+    const shuffled = shuffle(pool);
     const cards: MtgCard[] = shuffled
       .filter((c) => !excluded.has(c.id))
       .slice(0, SURVIVAL_BATCH_SIZE)

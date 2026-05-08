@@ -3,14 +3,19 @@ import Link from "next/link";
 import { BRAND, ROUTES } from "@/lib/constants";
 
 export const metadata: Metadata = {
-  title: `About — ${BRAND.name}`,
+  title: "About",
   description:
-    "About Storm Count — a free Magic: The Gathering mana-value guessing game. Daily challenges, survival runs, and leaderboards.",
+    "About Storm Count — a free Magic: The Gathering mana-value guessing game. Daily challenges, survival runs, and global leaderboards.",
   openGraph: {
     title: `About | ${BRAND.name}`,
     description:
-      "About Storm Count — a free MTG higher/lower mana-value guessing game.",
+      "About Storm Count — a free MTG higher/lower mana-value guessing game. Daily challenges, survival runs, and leaderboards.",
     url: `https://${BRAND.domain}/about`,
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `About | ${BRAND.name}`,
+    description: "About Storm Count — a free MTG higher/lower mana-value guessing game.",
   },
 };
 

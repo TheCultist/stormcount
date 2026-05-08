@@ -1,5 +1,28 @@
 import Image from "next/image";
 import type { LeaderboardEntry } from "@/lib/types";
+import { DAILY_SEED_SIZE } from "@/lib/constants";
+
+const DAILY_MAX_SCORE = DAILY_SEED_SIZE - 1;
+
+// Amber-gold crown color — intentionally hardcoded so it stays amber
+// regardless of which Izzet theme variable `--brass` maps to.
+const CROWN_AMBER = "#d4902a";
+const CROWN_AMBER_BG = "rgba(212, 144, 42, 0.12)";
+const CROWN_AMBER_BORDER = "rgba(212, 144, 42, 0.55)";
+
+function CrownIcon({ className, style, ...props }: React.SVGProps<SVGSVGElement>) {
+  return (
+    <svg
+      viewBox="0 0 16 16"
+      fill="currentColor"
+      className={className}
+      style={style}
+      {...props}
+    >
+      <path d="M2 13h12v1.5H2V13zm0-1L3 5l3.5 3L8 2l1.5 6L13 5l1 7H2z" />
+    </svg>
+  );
+}
 
 type LeaderboardTableProps = {
   entries: LeaderboardEntry[];
@@ -8,45 +31,20 @@ type LeaderboardTableProps = {
 };
 
 function formatTime(ms: number): string {
-  const totalSec = ms / 1000;
+  const totalSec = Math.floor(ms / 1000);
   const m = Math.floor(totalSec / 60);
-  const s = (totalSec % 60).toFixed(2);
-  return m > 0 ? `${m}m ${s}s` : `${s}s`;
+  const s = totalSec % 60;
+  return `${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
 }
 
-const ROMAN: Record<number, string> = { 1: "I", 2: "II", 3: "III" };
+const CROWN_RANKS = new Set([1, 2, 3]);
 
-function rankAccent(rank: number): {
-  badge: string;
-  text: string;
-  glow: string;
-} {
-  if (rank === 1) {
-    return {
-      badge: "border-brass-bright/80 bg-gradient-to-b from-brass-bright/30 to-brass/10",
-      text: "text-brass-bright",
-      glow: "shadow-[0_0_24px_-6px_rgba(232,193,129,0.65)]",
-    };
-  }
-  if (rank === 2) {
-    return {
-      badge: "border-foreground/35 bg-foreground/[0.06]",
-      text: "text-foreground",
-      glow: "",
-    };
-  }
-  if (rank === 3) {
-    return {
-      badge: "border-crimson/40 bg-crimson/10",
-      text: "text-crimson-bright",
-      glow: "",
-    };
-  }
-  return {
-    badge: "border-border-subtle bg-background-deep/40",
-    text: "text-muted",
-    glow: "",
-  };
+/** Row background tint for top-3 entries */
+function topRowStyle(rank: number): React.CSSProperties {
+  if (rank === 1) return { background: "rgba(212,144,42,0.09)" };
+  if (rank === 2) return { background: "rgba(220,230,240,0.05)" };
+  if (rank === 3) return { background: "rgba(184,56,40,0.07)" };
+  return {};
 }
 
 function Avatar({
@@ -73,8 +71,13 @@ function Avatar({
   const initial = username.slice(0, 1).toUpperCase();
   return (
     <div
-      className="flex shrink-0 items-center justify-center rounded-full bg-brass/20 text-[11px] font-bold text-brass-bright"
-      style={{ width: size, height: size }}
+      className="flex shrink-0 items-center justify-center rounded-full text-[11px] font-bold"
+      style={{
+        width: size,
+        height: size,
+        background: "rgba(30,112,192,0.18)",
+        color: "#4da8e8",
+      }}
     >
       {initial}
     </div>
@@ -95,56 +98,88 @@ export default function LeaderboardTable({
   }
 
   return (
-    <div className="codex rim-brass overflow-hidden rounded-md">
-      {/* Header row */}
-      <div className="grid grid-cols-[4rem_1fr_5rem_5.5rem] items-center gap-3 border-b border-rule/40 bg-paper-3/40 px-5 py-3 sm:grid-cols-[5rem_1fr_6rem_7rem]">
-        <span className="eyebrow text-[10px] text-muted">Rank</span>
-        <span className="eyebrow text-[10px] text-muted">Player</span>
-        <span className="eyebrow text-right text-[10px] text-muted">Score</span>
-        <span className="eyebrow text-right text-[10px] text-muted">Time</span>
+    <div
+      className="overflow-hidden rounded-md"
+      style={{
+        background: "rgba(10,16,28,0.70)",
+        border: "1px solid rgba(30,112,192,0.22)",
+        borderLeft: "3px solid #1e70c0",
+      }}
+    >
+      {/* Column header */}
+      <div
+        className="grid grid-cols-[4.5rem_1fr_5.5rem_6rem] items-center gap-3 px-5 py-3 sm:grid-cols-[5.5rem_1fr_6.5rem_7.5rem]"
+        style={{ borderBottom: "1px solid rgba(220,230,240,0.10)" }}
+      >
+        <span className="storm-mono text-[10px] uppercase tracking-[0.22em] text-foreground/40">Rank</span>
+        <span className="storm-mono text-[10px] uppercase tracking-[0.22em] text-foreground/40">Player</span>
+        <span className="storm-mono text-right text-[10px] uppercase tracking-[0.22em] text-foreground/40">Score</span>
+        <span className="storm-mono text-right text-[10px] uppercase tracking-[0.22em] text-foreground/40">Time (MM:SS)</span>
       </div>
 
-      <ul className="divide-y divide-rule/30">
+      <ul>
         {entries.map((entry, i) => {
-          const a = rankAccent(entry.rank);
-          const roman = ROMAN[entry.rank];
+          const isTop = CROWN_RANKS.has(entry.rank);
           const isMe = !!currentUserId && entry.userId === currentUserId;
+          const rowPy = isTop ? "py-5" : "py-3";
 
           return (
             <li
               key={`${entry.rank}-${entry.username}`}
-              style={{ ["--i" as string]: i }}
-              className={`anim-fade-in stagger group grid grid-cols-[4rem_1fr_5rem_5.5rem] items-center gap-3 px-5 py-3.5 transition-colors duration-200 sm:grid-cols-[5rem_1fr_6rem_7rem] ${
-                isMe
-                  ? "bg-brass/[0.07] hover:bg-brass/[0.10]"
-                  : "hover:bg-brass/[0.04]"
-              }`}
+              style={{
+                ["--i" as string]: i,
+                ...topRowStyle(entry.rank),
+                ...(isMe ? { background: "rgba(30,112,192,0.09)" } : {}),
+              }}
+              className={`anim-fade-in stagger group grid grid-cols-[4.5rem_1fr_5.5rem_6rem] items-center gap-3 px-5 ${rowPy} transition-colors duration-200 hover:brightness-110 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-white/[0.05] sm:grid-cols-[5.5rem_1fr_6.5rem_7.5rem]`}
             >
-              {/* Rank badge */}
-              <div className="flex items-center">
-                <span
-                  className={`inline-flex h-9 min-w-[2.5rem] items-center justify-center rounded-sm border px-2 text-[13px] font-bold tabular-nums ${a.badge} ${a.text} ${a.glow} ${
-                    roman ? "storm-display" : "storm-mono"
-                  }`}
-                  style={
-                    roman
-                      ? { fontVariationSettings: '"opsz" 96, "WONK" 1' }
-                      : undefined
-                  }
-                >
-                  {roman ?? `#${entry.rank}`}
-                </span>
+              {/* Rank */}
+              <div className="flex items-center gap-2">
+                {isTop ? (
+                  <>
+                    <CrownIcon
+                      className="h-5 w-5 shrink-0"
+                      style={{ color: CROWN_AMBER }}
+                      aria-hidden
+                    />
+                    <span
+                      className="storm-display text-2xl font-extrabold tabular-nums"
+                      style={{
+                        color: CROWN_AMBER,
+                        fontVariationSettings: '"opsz" 96, "WONK" 0',
+                      }}
+                    >
+                      {entry.rank}
+                    </span>
+                  </>
+                ) : (
+                  <span
+                    className="storm-mono text-sm tabular-nums"
+                    style={{ color: "rgba(220,230,240,0.35)" }}
+                  >
+                    {entry.rank}
+                  </span>
+                )}
               </div>
 
               {/* Avatar + username */}
               <div className="flex min-w-0 items-center gap-2.5">
-                <Avatar username={entry.username} imageUrl={entry.imageUrl} size={30} />
+                <Avatar username={entry.username} imageUrl={entry.imageUrl} size={isTop ? 34 : 28} />
                 <div className="min-w-0">
-                  <p className="storm-display truncate text-[15px] font-semibold tracking-[-0.005em] text-foreground transition-colors group-hover:text-brass-bright">
+                  <p
+                    className="storm-display truncate font-semibold tracking-[-0.005em] text-foreground"
+                    style={{ fontSize: isTop ? "1rem" : "0.875rem" }}
+                  >
                     {entry.username}
                   </p>
                   {isMe && (
-                    <span className="storm-mono rounded-sm bg-brass/20 px-1 py-px text-[9px] font-bold uppercase tracking-[0.15em] text-brass-bright">
+                    <span
+                      className="storm-mono rounded-sm px-1 py-px text-[9px] font-bold uppercase tracking-[0.15em]"
+                      style={{
+                        background: "rgba(30,112,192,0.18)",
+                        color: "#4da8e8",
+                      }}
+                    >
                       you
                     </span>
                   )}
@@ -153,14 +188,26 @@ export default function LeaderboardTable({
 
               {/* Score */}
               <div className="text-right">
-                <span className="storm-mono text-base font-bold tabular-nums text-foreground">
-                  {entry.score}
+                <span
+                  className="storm-mono tabular-nums font-bold"
+                  style={{
+                    fontSize: isTop ? "1rem" : "0.85rem",
+                    color: isTop ? "#ffffff" : "rgba(220,230,240,0.75)",
+                  }}
+                >
+                  {entry.score}/{DAILY_MAX_SCORE}
                 </span>
               </div>
 
               {/* Time */}
               <div className="text-right">
-                <span className="storm-mono text-xs tabular-nums text-foreground/65">
+                <span
+                  className="storm-mono tabular-nums"
+                  style={{
+                    fontSize: isTop ? "0.9rem" : "0.78rem",
+                    color: "rgba(220,230,240,0.50)",
+                  }}
+                >
                   {formatTime(entry.elapsed_ms)}
                 </span>
               </div>

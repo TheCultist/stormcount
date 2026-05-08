@@ -10,6 +10,47 @@ const SCRYFALL_USER_AGENT =
 // Scryfall returns at most 175 cards per page.
 const SCRYFALL_PAGE_SIZE = 175;
 
+// /cards/search is rate-limited to 2 req/s (500 ms). We use 600 ms to give
+// a small safety margin and be a polite API consumer.
+const SCRYFALL_REQUEST_DELAY_MS = 600;
+
+/**
+ * Sort orders used to sample from different "dimensions" of the catalog.
+ *
+ * Scryfall has no order=random, and all results under a single order are
+ * sorted deterministically — picking a random page from order=name always
+ * yields alphabetically-adjacent cards. We combat this two ways:
+ *
+ *   1. Seven orthogonal orderings so that no two pages share the same
+ *      "neighborhood" structure:
+ *        name      → alphabetical
+ *        edhrec    → EDHREC popularity rank
+ *        released  → set release date
+ *        cmc       → converted mana cost
+ *        color     → color-identity ordering
+ *        usd       → market price
+ *        artist    → artist name (completely orthogonal to card name)
+ *
+ *   2. Two independently-chosen random pages per dimension so that even
+ *      within a single ordering we sample from two unrelated positions.
+ *
+ * 7 dimensions × 2 pages × 175 cards ≈ 2,450 candidates (before dedup).
+ * After deduplication and a Fisher-Yates shuffle we slice DAILY_SEED_SIZE.
+ * Generation runs once per day, so 15 sequential API calls is fine.
+ */
+const SORT_DIMENSIONS = [
+  "name",
+  "edhrec",
+  "released",
+  "cmc",
+  "color",
+  "usd",
+  "artist",
+] as const;
+
+/** How many independently-chosen random pages to fetch per dimension. */
+const PAGES_PER_DIMENSION = 2;
+
 export function toMtgCard(
   card: ScryfallSearchResponse["data"][number],
 ): MtgCard {
@@ -24,6 +65,9 @@ export function toMtgCard(
   };
 }
 
+const sleep = (ms: number) =>
+  new Promise<void>((resolve) => setTimeout(resolve, ms));
+
 /** Fisher-Yates in-place shuffle (mirrors survival route). */
 function shuffle<T>(arr: T[]): T[] {
   for (let i = arr.length - 1; i > 0; i--) {
@@ -33,10 +77,14 @@ function shuffle<T>(arr: T[]): T[] {
   return arr;
 }
 
-async function scryfallPage(page: number): Promise<ScryfallSearchResponse> {
+async function scryfallPage(
+  page: number,
+  order: string = "name",
+): Promise<ScryfallSearchResponse> {
   const url = new URL(`${SCRYFALL_BASE_URL}/cards/search`);
   url.searchParams.set("q", `prefer:best ${DAILY_SCRYFALL_QUERY}`);
   url.searchParams.set("unique", "cards");
+  url.searchParams.set("order", order);
   url.searchParams.set("page", page.toString());
 
   const res = await fetch(url.toString(), {
@@ -55,47 +103,63 @@ async function scryfallPage(page: number): Promise<ScryfallSearchResponse> {
 /**
  * Returns DAILY_SEED_SIZE truly random cards from the daily card pool.
  *
- * Strategy (mirrors the survival route):
- * 1. Fetch page 1 → learn total_cards → compute total pages.
- * 2. Pick a random page, fetch it (reuse page-1 data if selected).
- * 3. Fisher-Yates shuffle the page results.
+ * Strategy:
+ * 1. Fetch order=name page 1 → learn total_cards / total pages (discard cards).
+ * 2. For each sort dimension, pick PAGES_PER_DIMENSION independently-chosen
+ *    random page numbers and fetch them sequentially. Choosing pages randomly
+ *    within a dimension spreads sampling across the full ordering range, and
+ *    using seven distinct orderings ensures the final pool spans orthogonal
+ *    parts of the catalog (alphabetical, popularity, price, artist, …).
+ * 3. Merge all pages, deduplicate by card ID, Fisher-Yates shuffle.
  * 4. Slice to DAILY_SEED_SIZE.
- *    If the random page was short (last page edge case), fall back to page 1.
  *
  * The caller is responsible for persisting the result so all players share
  * the same set on a given day.
  */
 export async function generateDailyCards(): Promise<MtgCard[]> {
-  // Step 1 — page 1 reveals the pool size.
-  const firstPage = await scryfallPage(1);
+  // Step 1 — page 1 reveals the pool size (we discard its card data).
+  const probePage = await scryfallPage(1, "name");
   const maxPage = Math.max(
     1,
-    Math.ceil(firstPage.total_cards / SCRYFALL_PAGE_SIZE),
+    Math.ceil(probePage.total_cards / SCRYFALL_PAGE_SIZE),
   );
 
-  // Step 2 — random page selection; reuse page-1 data if chosen.
-  const randomPage = Math.floor(Math.random() * maxPage) + 1;
-  const pageData =
-    randomPage === 1 ? firstPage : await scryfallPage(randomPage);
+  // Step 2 — fetch PAGES_PER_DIMENSION random pages per sort dimension.
+  // Each call is separated by SCRYFALL_REQUEST_DELAY_MS to respect the
+  // /cards/search hard limit of 2 requests per second.
+  const seen = new Set<string>();
+  const pool: ScryfallSearchResponse["data"] = [];
 
-  // Step 3 — shuffle and slice.
-  const cards = shuffle([...pageData.data])
-    .slice(0, DAILY_SEED_SIZE)
-    .map(toMtgCard);
-
-  // Step 4 — guard against a short last page; fall back to page 1.
-  if (cards.length < DAILY_SEED_SIZE) {
-    const fallback = shuffle([...firstPage.data])
-      .slice(0, DAILY_SEED_SIZE)
-      .map(toMtgCard);
-
-    if (fallback.length < DAILY_SEED_SIZE) {
-      throw new Error(
-        `Not enough cards from Scryfall: got ${fallback.length}, need ${DAILY_SEED_SIZE}`,
-      );
+  for (const order of SORT_DIMENSIONS) {
+    // Pick PAGES_PER_DIMENSION distinct random page numbers within [1, maxPage].
+    const chosenPages = new Set<number>();
+    while (chosenPages.size < Math.min(PAGES_PER_DIMENSION, maxPage)) {
+      chosenPages.add(Math.floor(Math.random() * maxPage) + 1);
     }
 
-    return fallback;
+    for (const pageNum of chosenPages) {
+      await sleep(SCRYFALL_REQUEST_DELAY_MS);
+      const pageData = await scryfallPage(pageNum, order);
+      for (const card of pageData.data) {
+        if (!seen.has(card.id)) {
+          seen.add(card.id);
+          pool.push(card);
+        }
+      }
+    }
+  }
+
+  // Step 3 — shuffle the merged pool.
+  const shuffled = shuffle(pool);
+
+  // Step 4 — slice to DAILY_SEED_SIZE.
+  const cards = shuffled.slice(0, DAILY_SEED_SIZE).map(toMtgCard);
+
+  const totalFetches = SORT_DIMENSIONS.length * PAGES_PER_DIMENSION;
+  if (cards.length < DAILY_SEED_SIZE) {
+    throw new Error(
+      `Not enough cards from Scryfall: got ${cards.length} across ${totalFetches} page(s) (${SORT_DIMENSIONS.length} dimension(s) × ${PAGES_PER_DIMENSION}), need ${DAILY_SEED_SIZE}`,
+    );
   }
 
   return cards;

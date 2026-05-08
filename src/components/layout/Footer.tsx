@@ -4,7 +4,7 @@ import { BRAND, ROUTES } from "@/lib/constants";
 
 export default function Footer() {
   return (
-    <footer className="mt-20 border-t border-rule/60">
+    <footer className="mt-auto border-t border-rule/60">
       {/* Top hairline highlight */}
       <span
         aria-hidden

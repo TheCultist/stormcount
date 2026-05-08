@@ -4,9 +4,14 @@ import { BRAND, ROUTES } from "@/lib/constants";
 import ContactFormClient from "@/components/forms/ContactFormClient";
 
 export const metadata: Metadata = {
-  title: `Report a Bug — ${BRAND.name}`,
+  title: "Report a Bug",
   description:
-    "Spotted a wrong mana value or a broken run? Report it here and we'll fix it fast.",
+    "Spotted a wrong mana value or a broken run in Storm Count? Report it here and we'll fix it fast.",
+  openGraph: {
+    title: `Report a Bug | ${BRAND.name}`,
+    description: "Spotted a wrong mana value or broken run? Report it here.",
+    url: `https://${BRAND.domain}/bug-report`,
+  },
 };
 
 const fieldClass =

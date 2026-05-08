@@ -60,6 +60,8 @@ function clearDeferredScore(date: string) {
 
 export interface DailyGameState {
   status: DailyStatus;
+  /** The full ordered card list for the current day's seed. */
+  cards: MtgCard[];
   /** True while replaying today's seed for fun — score is never submitted. */
   practiceMode: boolean;
   /**
@@ -457,6 +459,7 @@ export function useDailyGame(): DailyGameState {
 
   return {
     status,
+    cards,
     practiceMode,
     scoreUnsaved,
     scoreAutoSaved,
