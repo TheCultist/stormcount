@@ -9,7 +9,7 @@
  * cards regardless of mode.
  */
 export const DAILY_SCRYFALL_QUERY =
-  "is:default game:paper -is:funny -is:playtest -is:extras -is:digital -is:split -mana:{X} -t:dungeon -t:land -t:conspiracy not:extra not:token unique:cards";
+  "is:default game:paper has:mana -is:funny -is:playtest -is:extras -is:digital -is:split -mana:{X} -t:dungeon -t:land -t:conspiracy not:extra not:token unique:cards";
 
 /** Cards to fetch in one random Scryfall page (max ~175). */
 export const DAILY_FETCH_SIZE = 175;

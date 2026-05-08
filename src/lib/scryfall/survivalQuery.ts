@@ -11,7 +11,7 @@
  * Scryfall syntax reference: https://scryfall.com/docs/syntax
  */
 export const SURVIVAL_SCRYFALL_QUERY =
-  "is:default game:paper -is:funny -is:playtest -is:extras -is:digital -is:split -mana:{X} -t:dungeon -t:land -t:conspiracy not:extra not:token unique:cards";
+  "is:default game:paper has:mana -is:funny -is:playtest -is:extras -is:digital -is:split -mana:{X} -t:dungeon -t:land -t:conspiracy not:extra not:token unique:cards";
 
 /** How many cards to fetch per batch. */
 export const SURVIVAL_BATCH_SIZE = 20;

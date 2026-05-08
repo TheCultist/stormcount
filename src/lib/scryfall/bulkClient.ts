@@ -83,6 +83,7 @@ export async function fetchBulkManifestUrl(): Promise<string> {
  *   -is:extras       — exclude token/memorabilia/minigame set types
  *   -is:digital      — no digital-only cards (also covered by game:paper)
  *   -is:split        — no split-layout cards
+ *   has:mana         — must have a printed mana cost (excludes Jumpstart front cards)
  *   -mana:{X}        — no X-cost spells
  *   -t:land / -t:dungeon / -t:conspiracy / not:token
  */
@@ -123,6 +124,14 @@ function passesPoolFilters(card: ScryfallCard): boolean {
   if (EXCLUDED_TYPE_KEYWORDS.some((kw) => card.type_line?.includes(kw))) {
     return false;
   }
+
+  // has:mana — card must have a printed mana cost.
+  // Jumpstart booster-face cards (e.g. "GROSS" from J22) have mana_cost: null
+  // and no face mana costs; this is distinct from a {0} mana cost (Ornithopter).
+  const hasMana =
+    card.mana_cost != null ||
+    card.card_faces?.some((face) => face.mana_cost != null);
+  if (!hasMana) return false;
 
   // -mana:{X} — exclude cards whose mana cost contains {X}.
   if (card.mana_cost?.includes("{X}")) return false;
