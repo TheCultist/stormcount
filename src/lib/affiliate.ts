@@ -28,6 +28,8 @@ export function getAffiliateConfig(): AffiliateConfig {
   };
 }
 
+// ── TCGPlayer ──────────────────────────────────────────────────────────────
+
 /**
  * Build a TCGPlayer affiliate link for the given card name.
  * Constructs a product search URL and wraps it in the partner tracking link.
@@ -42,11 +44,48 @@ export function buildTcgPlayerLink(
   return `${partnerLink}?u=${encodeURIComponent(dest)}`;
 }
 
+// ── CardTrader ─────────────────────────────────────────────────────────────
+
+/**
+ * Formats a string for CardTrader URL slugs: lowercase, hyphens, strips
+ * leading articles (A / An / The) and special characters.
+ * Ported from findthatcard/lib/cardtrader/links.ts.
+ */
+export function formatForUrl(text: string): string {
+  let cleaned = text.trim();
+  const articleMatch = cleaned.match(/^(a|an|the)\s+(.+)$/i);
+  if (articleMatch) cleaned = articleMatch[2];
+
+  return cleaned
+    .toLowerCase()
+    .replace(/'/g, "-")
+    .replace(/[":,]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/[^\w-]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
+}
+
 /**
  * Build a CardTrader affiliate link.
- * Without a set name we link to the Magic hub with the share code — the
- * share code tracks the referral regardless of landing page.
+ *
+ * When setName is provided, constructs a card-specific URL
+ * (`/en/cards/[card-name]-[set-name]`).  Without it — which is the common
+ * case in Storm Count since MtgCard doesn't carry set metadata — falls back
+ * to the Magic hub page, which still tracks the referral via share_code.
  */
-export function buildCardTraderLink(shareCode: string): string {
+export function buildCardTraderLink(
+  cardName: string,
+  shareCode: string,
+  setName?: string | null,
+): string {
+  if (setName && cardName) {
+    const formattedCard = formatForUrl(cardName);
+    let formattedSet = formatForUrl(setName);
+    if (formattedSet.endsWith("-commander")) {
+      formattedSet = `commander-${formattedSet.replace(/-commander$/, "")}`;
+    }
+    return `https://www.cardtrader.com/en/cards/${formattedCard}-${formattedSet}?share_code=${encodeURIComponent(shareCode)}`;
+  }
   return `https://www.cardtrader.com/en/magic?share_code=${encodeURIComponent(shareCode)}`;
 }

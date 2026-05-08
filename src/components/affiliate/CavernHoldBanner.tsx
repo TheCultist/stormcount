@@ -23,6 +23,10 @@ export default function CavernHoldBanner({ href, copy }: Props) {
       className="group block w-full"
       aria-label={`CavernHold — ${copy}`}
     >
+        <p className="mb-0.5 px-0.5 text-[9px] uppercase tracking-[0.14em] text-muted/70">
+        Advertisement
+      </p>
+
       <div
         className="relative isolate overflow-hidden rounded-sm transition-colors duration-200"
         style={{

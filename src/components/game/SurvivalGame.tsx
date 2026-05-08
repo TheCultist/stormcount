@@ -167,7 +167,7 @@ export default function SurvivalGame({
   // ── game over ────────────────────────────────────────────────────────────
   if (status === "gameover") {
     return (
-      <div className="flex flex-1 items-center justify-center py-16">
+      <div className="flex flex-1 items-start justify-center px-5 py-10 sm:items-center sm:px-8 sm:py-14">
         <GameOverScreen
           mode="survival"
           score={streak}
