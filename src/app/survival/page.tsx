@@ -1,4 +1,5 @@
 import SurvivalGame from "@/components/game/SurvivalGame";
+import { getAffiliateConfig } from "@/lib/affiliate";
 
 import type { Metadata } from "next";
 
@@ -21,5 +22,6 @@ export const metadata: Metadata = {
 };
 
 export default function SurvivalPage() {
-  return <SurvivalGame />;
+  const affiliateConfig = getAffiliateConfig();
+  return <SurvivalGame affiliateConfig={affiliateConfig} />;
 }

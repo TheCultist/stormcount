@@ -3,7 +3,15 @@ import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { dailySeeds } from "@/lib/db/schema";
-import { generateDailyCards } from "@/lib/scryfall/seedGenerator";
+import {
+  generateDailyCards,
+  generateThemedCards,
+} from "@/lib/scryfall/seedGenerator";
+import { isAdmin } from "@/lib/auth/admin";
+import { findThemedDayForDate } from "@/lib/themedDays";
+
+// Long-running on themed days (multiple sequential Scryfall calls).
+export const maxDuration = 60;
 
 /** Returns tomorrow's date in UTC as "yyyy-mm-dd". */
 function tomorrow(): string {
@@ -12,20 +20,15 @@ function tomorrow(): string {
   return d.toISOString().slice(0, 10);
 }
 
-/** Checks if a Clerk userId is listed in the ADMIN_USER_IDS env var. */
-function isAdmin(userId: string): boolean {
-  const ids =
-    process.env.ADMIN_USER_IDS?.split(",")
-      .map((id) => id.trim())
-      .filter(Boolean) ?? [];
-  return ids.includes(userId);
-}
-
 /**
  * POST /api/admin/seed
  *
  * Pre-generates (or force-regenerates) the daily seed for a given date.
  * Useful for scheduling seeds ahead of time and for testing.
+ *
+ * If the target date matches a themed_days row, the seed is generated using
+ * the themed Scryfall query (live API) instead of the regular bulk pool, and
+ * the row's themeName + themeDescription are persisted alongside the cards.
  *
  * Request body (all optional):
  *   {
@@ -80,7 +83,8 @@ export async function POST(req: Request) {
     if (existing && !force) {
       return NextResponse.json(
         {
-          message: "Seed already exists for this date (pass force:true to regenerate)",
+          message:
+            "Seed already exists for this date (pass force:true to regenerate)",
           date: targetDate,
           cardCount: (existing.cards as unknown[]).length,
           themed: existing.themed ?? null,
@@ -89,18 +93,28 @@ export async function POST(req: Request) {
       );
     }
 
-    const cards = await generateDailyCards();
+    // Themed day? Use the themed query path, otherwise the regular bulk pool.
+    const theme = await findThemedDayForDate(targetDate);
+    const cards = theme
+      ? await generateThemedCards(theme.scryfallQuery)
+      : await generateDailyCards();
+
+    const themedLabel = theme?.themeName ?? null;
+    const themedDescription = theme?.themeDescription ?? null;
 
     if (existing) {
-      // force regenerate — update cards, leave themed label intact
       await db
         .update(dailySeeds)
-        .set({ cards })
+        .set({ cards, themed: themedLabel, themedDescription })
         .where(eq(dailySeeds.date, targetDate));
     } else {
-      await db
-        .insert(dailySeeds)
-        .values({ id: targetDate, date: targetDate, cards, themed: null });
+      await db.insert(dailySeeds).values({
+        id: targetDate,
+        date: targetDate,
+        cards,
+        themed: themedLabel,
+        themedDescription,
+      });
     }
 
     return NextResponse.json(
@@ -108,6 +122,7 @@ export async function POST(req: Request) {
         message: existing ? "Seed regenerated" : "Seed generated",
         date: targetDate,
         cardCount: cards.length,
+        themed: themedLabel,
       },
       { status: 201 },
     );
@@ -115,5 +130,55 @@ export async function POST(req: Request) {
     console.error("[admin/seed] error:", err);
     const msg = err instanceof Error ? err.message : "Unknown error";
     return NextResponse.json({ error: msg }, { status: 502 });
+  }
+}
+
+/**
+ * DELETE /api/admin/seed
+ *
+ * Removes a daily_seeds row by date. Used by the admin Schedule page to
+ * undo an accidental Generate-Now click before the day arrives.
+ *
+ * Body:
+ *   { date: string }   // ISO "yyyy-mm-dd"
+ *
+ * Responses:
+ *   200 — seed removed (or no-op if it never existed)
+ *   400 — invalid date
+ *   401/403 — auth
+ */
+export async function DELETE(req: Request) {
+  const { userId } = await auth();
+
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+
+  if (!isAdmin(userId)) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+
+  let body: { date?: unknown };
+  try {
+    body = await req.json();
+  } catch {
+    return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
+  }
+
+  const date = typeof body.date === "string" ? body.date : "";
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+    return NextResponse.json(
+      { error: 'date is required, format "yyyy-mm-dd"' },
+      { status: 400 },
+    );
+  }
+
+  try {
+    await db.delete(dailySeeds).where(eq(dailySeeds.date, date));
+    return NextResponse.json({ message: "Seed removed", date });
+  } catch (err) {
+    console.error("[admin/seed DELETE] error:", err);
+    const msg = err instanceof Error ? err.message : "Unknown error";
+    return NextResponse.json({ error: msg }, { status: 500 });
   }
 }

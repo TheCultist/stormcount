@@ -5,10 +5,13 @@ import { eq, max, count, desc, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dailyScores, survivalBests } from "@/lib/db/schema";
 import { ROUTES } from "@/lib/constants";
+import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
 
 export const metadata = {
   title: "Profile — Storm Count",
 };
+
+const CAVERNHOLD_URL = process.env.CAVERNHOLD_AFFILIATE_LINK ?? null;
 
 // ── helpers ──────────────────────────────────────────────────────────────────
 
@@ -219,6 +222,12 @@ export default async function ProfilePage() {
           index={3}
         />
       </section>
+
+      {/* CavernHold banner */}
+      <CavernHoldBanner
+        href={CAVERNHOLD_URL}
+        copy="Your decks are worth protecting. CavernHold keeps them ready."
+      />
 
       {/* Recent runs */}
       <section className="codex rim-brass flex flex-col gap-4 rounded-md p-7">

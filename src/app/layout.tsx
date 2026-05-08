@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
+import { auth } from "@clerk/nextjs/server";
 import Script from "next/script";
 import "./globals.css";
 import "./theme-izzet.css";
@@ -8,6 +9,7 @@ import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import CookieBanner from "@/components/layout/CookieBanner";
 import { BRAND } from "@/lib/constants";
+import { isAdmin } from "@/lib/auth/admin";
 
 const fontDisplay = Fraunces({
   variable: "--font-display",
@@ -82,11 +84,14 @@ export const metadata: Metadata = {
   },
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const { userId } = await auth();
+  const adminUser = isAdmin(userId);
+
   return (
     <ClerkProvider>
       <html
@@ -136,7 +141,7 @@ export default function RootLayout({
           <div className="atmosphere-rays" aria-hidden />
           <div className="atmosphere-vignette" aria-hidden />
 
-          <NavBar />
+          <NavBar isAdmin={adminUser} />
           <main className="relative flex flex-1 flex-col">{children}</main>
           <Footer />
           <CookieBanner />

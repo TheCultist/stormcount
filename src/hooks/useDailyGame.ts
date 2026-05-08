@@ -78,6 +78,7 @@ export interface DailyGameState {
   scoreAutoSaved: boolean;
   date: string;
   themed: string | null;
+  themedDescription: string | null;
   anchor: MtgCard | null;
   mystery: MtgCard | null;
   round: number;
@@ -99,6 +100,7 @@ export function useDailyGame(): DailyGameState {
   const [practiceMode, setPracticeMode] = useState(false);
   const [date, setDate] = useState(todayUtc());
   const [themed, setThemed] = useState<string | null>(null);
+  const [themedDescription, setThemedDescription] = useState<string | null>(null);
   const [cards, setCards] = useState<MtgCard[]>([]);
   const [round, setRound] = useState(0);
   const [score, setScore] = useState(0);
@@ -149,6 +151,7 @@ export function useDailyGame(): DailyGameState {
         const data: {
           date: string;
           themed: string | null;
+          themedDescription: string | null;
           cards: MtgCard[];
           alreadyPlayed: boolean;
         } = await res.json();
@@ -156,6 +159,7 @@ export function useDailyGame(): DailyGameState {
         if (cancelled) return;
         setDate(data.date);
         setThemed(data.themed);
+        setThemedDescription(data.themedDescription ?? null);
         setCards(data.cards);
 
         if (data.alreadyPlayed) {
@@ -465,6 +469,7 @@ export function useDailyGame(): DailyGameState {
     scoreAutoSaved,
     date,
     themed,
+    themedDescription,
     anchor,
     mystery,
     round,

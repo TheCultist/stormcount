@@ -6,6 +6,7 @@ import ScoreDisplay from "@/components/game/ScoreDisplay";
 import GameOverScreen from "@/components/game/GameOverScreen";
 import { useSurvivalGame } from "@/hooks/useSurvivalGame";
 import type { GuessDirection } from "@/lib/types";
+import type { AffiliateConfig } from "@/lib/affiliate";
 
 // ── Static rules data ─────────────────────────────────────────────────────
 
@@ -39,7 +40,11 @@ const SHORTCUTS = [
 
 // ── Component ─────────────────────────────────────────────────────────────
 
-export default function SurvivalGame() {
+export default function SurvivalGame({
+  affiliateConfig,
+}: {
+  affiliateConfig?: AffiliateConfig | null;
+}) {
   const {
     status,
     anchor,
@@ -163,7 +168,13 @@ export default function SurvivalGame() {
   if (status === "gameover") {
     return (
       <div className="flex flex-1 items-center justify-center py-16">
-        <GameOverScreen mode="survival" score={streak} onRestart={restart} />
+        <GameOverScreen
+          mode="survival"
+          score={streak}
+          lastCard={mystery}
+          affiliateConfig={affiliateConfig ?? null}
+          onRestart={restart}
+        />
       </div>
     );
   }

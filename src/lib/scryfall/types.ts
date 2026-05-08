@@ -42,6 +42,40 @@ export interface ScryfallCard {
   digital?: boolean;
   collector_number?: string;
   all_parts?: ScryfallRelatedCard[];
+  // Fields present on bulk-data card objects (used by bulkClient filters).
+  layout?: string;
+  games?: string[];
+  promo?: boolean;
+  reprint?: boolean;
+  variation?: boolean;
+  textless?: boolean;
+  border_color?: string;
+  rarity?: string;
+  // "acorn" on non-un-set cards that are still joke/silver-border equivalent.
+  security_stamp?: string;
+}
+
+/**
+ * Entry in the Scryfall /bulk-data manifest response.
+ *
+ * Documented at https://scryfall.com/docs/api/bulk-data — only the fields we
+ * actually consume are typed.
+ */
+export interface ScryfallBulkDataEntry {
+  type: string; // "oracle_cards" | "default_cards" | "all_cards" | ...
+  name: string;
+  description: string;
+  download_uri: string;
+  updated_at: string;
+  size: number;
+  content_type: string;
+  content_encoding: string;
+}
+
+export interface ScryfallBulkDataManifest {
+  object: "list";
+  has_more: boolean;
+  data: ScryfallBulkDataEntry[];
 }
 
 export interface ScryfallSearchResponse {

@@ -39,7 +39,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-export default function NavBar() {
+export default function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
   const { isSignedIn, isLoaded } = useUser();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
@@ -92,6 +92,11 @@ export default function NavBar() {
               <NavLink href={link.href} label={link.label} />
             </li>
           ))}
+          {isAdmin && (
+            <li>
+              <NavLink href="/admin/themed-days" label="Admin" />
+            </li>
+          )}
         </ul>
 
         {/* Right controls */}
@@ -128,6 +133,11 @@ export default function NavBar() {
             <NavLink href={link.href} label={link.label} />
           </li>
         ))}
+        {isAdmin && (
+          <li>
+            <NavLink href="/admin/themed-days" label="Admin" />
+          </li>
+        )}
       </ul>
     </header>
   );

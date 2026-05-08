@@ -36,6 +36,7 @@ export type DailySeed = {
   date: string; // ISO yyyy-mm-dd (UTC)
   card_ids: string[]; // ordered, length 100
   themed?: string | null; // e.g. "Dragons Day"
+  themedDescription?: string | null; // long-form blurb for themed days
 };
 
 export type SubmitScorePayload = {

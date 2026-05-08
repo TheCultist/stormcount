@@ -238,6 +238,7 @@ export default function DailyGame() {
     scoreAutoSaved,
     date,
     themed,
+    themedDescription,
     anchor,
     mystery,
     round,
@@ -311,6 +312,11 @@ export default function DailyGame() {
               </>
             )}
           </p>
+          {themed && themedDescription && (
+            <p className="max-w-md text-center text-sm italic text-foreground/75">
+              {themedDescription}
+            </p>
+          )}
         </div>
 
         <RulesPanel />

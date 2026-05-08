@@ -2,8 +2,11 @@ import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import { getLeaderboard } from "@/lib/db/leaderboard";
+import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
 
 export const dynamic = "force-dynamic";
+
+const CAVERNHOLD_URL = process.env.CAVERNHOLD_AFFILIATE_LINK ?? null;
 
 export const metadata = {
   title: "Leaderboard",
@@ -98,6 +101,12 @@ export default async function LeaderboardPage() {
         entries={entries}
         currentUserId={userId}
         emptyLabel="No scores yet today — be the first to play!"
+      />
+
+      {/* CavernHold banner */}
+      <CavernHoldBanner
+        href={CAVERNHOLD_URL}
+        copy="Top players bring their best decks. And something to carry them in."
       />
 
       {/* Footer tagline */}
