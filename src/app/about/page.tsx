@@ -1,27 +1,71 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND, ROUTES } from "@/lib/constants";
+import Script from "next/script";
+import { ROUTES } from "@/lib/constants";
+import {
+  buildMetadata,
+  buildBreadcrumbList,
+  buildFaqPage,
+  jsonLd,
+} from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About",
-  description:
-    "About Storm Count — a free Magic: The Gathering mana-value guessing game. Daily challenges, survival runs, and global leaderboards.",
-  openGraph: {
-    title: `About | ${BRAND.name}`,
-    description:
-      "About Storm Count — a free MTG higher/lower mana-value guessing game. Daily challenges, survival runs, and leaderboards.",
-    url: `https://${BRAND.domain}/about`,
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: `About | ${BRAND.name}`,
-    description: "About Storm Count — a free MTG higher/lower mana-value guessing game.",
-  },
-};
+const TITLE = "About Storm Count";
+const DESCRIPTION =
+  "Learn about Storm Count — a free Magic: The Gathering mana-value guessing game. Daily challenges, survival runs, global leaderboards, and how the card data is sourced from Scryfall.";
+
+export const metadata: Metadata = buildMetadata({
+  path: "/about",
+  title: TITLE,
+  description: DESCRIPTION,
+});
+
+const aboutJsonLd = [
+  buildBreadcrumbList([
+    { name: "Home", path: "/" },
+    { name: "About", path: "/about" },
+  ]),
+  buildFaqPage([
+    {
+      question: "What is Storm Count?",
+      answer:
+        "Storm Count is a free, browser-based Magic: The Gathering guessing game. Each round you see two MTG cards and guess whether the mystery card's mana value is higher or lower than the anchor card.",
+    },
+    {
+      question: "How do I play Storm Count?",
+      answer:
+        "Compare the two cards shown on screen and click 'Higher' or 'Lower' based on the mystery card's mana value. Chain correct guesses to raise your Storm Count. You can play the fixed Daily Challenge or the endless Survival mode.",
+    },
+    {
+      question: "What is the difference between Daily and Survival mode?",
+      answer:
+        "Daily Challenge is a fixed 50-card sequence that resets every UTC midnight — everyone plays the same cards and competes on the daily leaderboard. Survival is an endless run that ends the moment you guess wrong.",
+    },
+    {
+      question: "Where does the card data come from?",
+      answer:
+        "All card data and images come from the public Scryfall API. The card pool is filtered to tournament-legal, paper Magic: The Gathering cards with a defined mana value.",
+    },
+    {
+      question: "Is Storm Count affiliated with Wizards of the Coast?",
+      answer:
+        "No. Storm Count is unofficial fan content and is not produced by, endorsed by, or affiliated with Wizards of the Coast LLC. Magic: The Gathering is a trademark of Wizards of the Coast.",
+    },
+    {
+      question: "Is Storm Count free to play?",
+      answer:
+        "Yes. Storm Count is completely free to play. You can play anonymously or sign in to save your scores and appear on the leaderboard.",
+    },
+  ]),
+];
 
 export default function AboutPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
+      <Script
+        id="schema-about"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(...aboutJsonLd) }}
+      />
       {/* Header */}
       <header className="anim-fade-in flex flex-col gap-3">
         <Link

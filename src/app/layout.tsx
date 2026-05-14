@@ -9,6 +9,7 @@ import NavBar from "@/components/layout/NavBar";
 import Footer from "@/components/layout/Footer";
 import CookieBanner from "@/components/layout/CookieBanner";
 import { BRAND } from "@/lib/constants";
+import { BASE_URL, absoluteUrl, jsonLd } from "@/lib/seo";
 import { isAdmin } from "@/lib/auth/admin";
 
 const fontDisplay = Fraunces({
@@ -30,58 +31,125 @@ const fontMono = Geist_Mono({
   weight: ["400", "500", "700"],
 });
 
-const BASE_URL = `https://${BRAND.domain}`;
 const defaultTitle = `${BRAND.name} — ${BRAND.tagline}`;
-const defaultDescription =
-  "Storm Count is a free Magic: The Gathering guessing game. Each round shows two MTG cards — guess whether the mystery card's mana value is higher or lower. Daily challenges, survival mode, and global leaderboards.";
 
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
+  themeColor: BRAND.themeColor,
+  colorScheme: "dark",
 };
 
 export const metadata: Metadata = {
   metadataBase: new URL(BASE_URL),
+  applicationName: BRAND.name,
   title: {
     default: defaultTitle,
     template: `%s | ${BRAND.name}`,
   },
-  description: defaultDescription,
-  keywords: [
-    "Magic the Gathering game",
-    "MTG guessing game",
-    "MTG higher lower",
-    "mana value game",
-    "Magic the Gathering daily challenge",
-    "Storm Count",
-    "MTG trivia",
-    "Magic card game",
-  ],
+  description: BRAND.description,
+  // Site-wide canonical. Per-page metadata overrides via alternates.canonical.
+  alternates: {
+    canonical: "/",
+  },
+  authors: [{ name: BRAND.publisher, url: BASE_URL }],
+  creator: BRAND.publisher,
+  publisher: BRAND.publisher,
+  category: "games",
+  referrer: "origin-when-cross-origin",
+  formatDetection: {
+    email: false,
+    address: false,
+    telephone: false,
+  },
   openGraph: {
     type: "website",
     siteName: BRAND.name,
     title: defaultTitle,
-    description: defaultDescription,
+    description: BRAND.description,
     url: BASE_URL,
-    images: [{ url: "/opengraph-image.png", width: 1200, height: 630, alt: `${BRAND.name} — ${BRAND.tagline}` }],
+    locale: BRAND.ogLocale,
+    images: [
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: defaultTitle,
+      },
+    ],
   },
   twitter: {
     card: "summary_large_image",
     title: defaultTitle,
-    description: defaultDescription,
+    description: BRAND.description,
     images: ["/opengraph-image.png"],
   },
-  icons: {
-    icon: "/logo.png",
-    shortcut: "/logo.png",
-    apple: "/logo.png",
-  },
+  // NB: `metadata.icons` is intentionally omitted. Next.js gives file-based
+  // conventions higher priority (`app/icon.png` → <link rel="icon" />) so
+  // declaring it here would either be a dead override or fight the file
+  // convention. See node_modules/next/dist/docs/01-app/03-api-reference/03-file-conventions/01-metadata/app-icons.md
+  manifest: "/manifest.webmanifest",
   robots: {
     index: true,
     follow: true,
-    googleBot: { index: true, follow: true },
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
   },
+};
+
+// Site-wide JSON-LD: identifies the website, the publishing organisation,
+// the underlying game (VideoGame), and the search action entry point.
+const siteJsonLd = {
+  "@context": "https://schema.org",
+  "@graph": [
+    {
+      "@type": "WebSite",
+      "@id": `${BASE_URL}/#website`,
+      url: BASE_URL,
+      name: BRAND.name,
+      description: BRAND.description,
+      inLanguage: BRAND.htmlLang,
+      publisher: { "@id": `${BASE_URL}/#organization` },
+    },
+    {
+      "@type": "Organization",
+      "@id": `${BASE_URL}/#organization`,
+      name: BRAND.publisher,
+      url: BASE_URL,
+      logo: {
+        "@type": "ImageObject",
+        url: absoluteUrl("/logo.png"),
+        width: 512,
+        height: 512,
+      },
+    },
+    {
+      "@type": "VideoGame",
+      "@id": `${BASE_URL}/#videogame`,
+      name: BRAND.name,
+      url: BASE_URL,
+      description: BRAND.description,
+      genre: ["Trivia", "Card Game", "Puzzle"],
+      gamePlatform: ["Web Browser"],
+      applicationCategory: "GameApplication",
+      operatingSystem: "Any",
+      inLanguage: BRAND.htmlLang,
+      publisher: { "@id": `${BASE_URL}/#organization` },
+      offers: {
+        "@type": "Offer",
+        price: "0",
+        priceCurrency: "USD",
+        availability: "https://schema.org/InStock",
+      },
+      isAccessibleForFree: true,
+    },
+  ],
 };
 
 export default async function RootLayout({
@@ -95,7 +163,7 @@ export default async function RootLayout({
   return (
     <ClerkProvider>
       <html
-        lang="en"
+        lang={BRAND.htmlLang}
         data-theme="izzet"
         className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable} h-full antialiased`}
       >
@@ -103,38 +171,7 @@ export default async function RootLayout({
           <Script
             id="schema-org"
             type="application/ld+json"
-            dangerouslySetInnerHTML={{
-              __html: JSON.stringify({
-                "@context": "https://schema.org",
-                "@graph": [
-                  {
-                    "@type": "WebSite",
-                    "@id": `${BASE_URL}/#website`,
-                    name: BRAND.name,
-                    url: BASE_URL,
-                    description: defaultDescription,
-                    publisher: { "@id": `${BASE_URL}/#organization` },
-                  },
-                  {
-                    "@type": "Organization",
-                    "@id": `${BASE_URL}/#organization`,
-                    name: BRAND.name,
-                    url: BASE_URL,
-                    logo: `${BASE_URL}/logo.png`,
-                  },
-                  {
-                    "@type": "SoftwareApplication",
-                    "@id": `${BASE_URL}/#app`,
-                    name: BRAND.name,
-                    url: BASE_URL,
-                    applicationCategory: "GameApplication",
-                    operatingSystem: "Any",
-                    description: defaultDescription,
-                    offers: { "@type": "Offer", price: "0", priceCurrency: "USD" },
-                  },
-                ],
-              }),
-            }}
+            dangerouslySetInnerHTML={{ __html: jsonLd(siteJsonLd) }}
           />
           {/* Atmosphere layers */}
           <div className="atmosphere-root" aria-hidden />

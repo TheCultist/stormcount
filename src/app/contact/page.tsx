@@ -1,21 +1,53 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { BRAND, ROUTES } from "@/lib/constants";
 import ContactFormClient from "@/components/forms/ContactFormClient";
+import {
+  absoluteUrl,
+  buildMetadata,
+  buildBreadcrumbList,
+  jsonLd,
+} from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Contact",
-  description: "Get in touch with the Storm Count team — questions, feedback, or anything else.",
-  openGraph: {
-    title: `Contact | ${BRAND.name}`,
-    description: "Get in touch with the Storm Count team.",
-    url: `https://${BRAND.domain}/contact`,
+const TITLE = "Contact Storm Count";
+const DESCRIPTION =
+  "Get in touch with the Storm Count team. Questions, feedback, partnership ideas, or anything else about the Magic: The Gathering guessing game.";
+
+export const metadata: Metadata = buildMetadata({
+  path: "/contact",
+  title: TITLE,
+  description: DESCRIPTION,
+});
+
+const contactJsonLd = [
+  {
+    "@context": "https://schema.org",
+    "@type": "ContactPage",
+    name: TITLE,
+    url: absoluteUrl("/contact"),
+    description: DESCRIPTION,
+    inLanguage: BRAND.htmlLang,
+    isPartOf: {
+      "@type": "WebSite",
+      name: BRAND.name,
+      url: absoluteUrl("/"),
+    },
   },
-};
+  buildBreadcrumbList([
+    { name: "Home", path: "/" },
+    { name: "Contact", path: "/contact" },
+  ]),
+];
 
 export default function ContactPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
+      <Script
+        id="schema-contact"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(...contactJsonLd) }}
+      />
       <header className="anim-fade-in flex flex-col gap-3">
         <p className="eyebrow">Contact</p>
         <h1

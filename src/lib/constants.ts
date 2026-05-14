@@ -48,4 +48,18 @@ export const BRAND = {
   name: "Storm Count",
   domain: "stormcount.gg",
   tagline: "How high is your storm count?",
+  /** One-paragraph site description used as the default meta description and og:description. */
+  description:
+    "Storm Count is a free Magic: The Gathering guessing game. Each round shows two MTG cards — guess whether the mystery card's mana value is higher or lower. Daily challenges, survival mode, and global leaderboards.",
+  /** Short description used by PWA manifest and where length is constrained. */
+  shortDescription:
+    "A free MTG higher/lower mana-value guessing game. Daily challenges, survival mode, and leaderboards.",
+  /** BCP-47 locale tag for <html lang>. */
+  htmlLang: "en-US",
+  /** Open Graph locale (note the underscore). */
+  ogLocale: "en_US",
+  /** Publisher / author display name (used in metadata + JSON-LD). */
+  publisher: "Storm Count",
+  /** Primary brand colour — kept in sync with theme-izzet.css. */
+  themeColor: "#0d0c0a",
 } as const;

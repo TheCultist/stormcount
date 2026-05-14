@@ -1,18 +1,24 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { BRAND, ROUTES } from "@/lib/constants";
+import Script from "next/script";
+import { ROUTES } from "@/lib/constants";
 import ContactFormClient from "@/components/forms/ContactFormClient";
+import { buildMetadata, buildBreadcrumbList, jsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Report a Bug",
-  description:
-    "Spotted a wrong mana value or a broken run in Storm Count? Report it here and we'll fix it fast.",
-  openGraph: {
-    title: `Report a Bug | ${BRAND.name}`,
-    description: "Spotted a wrong mana value or broken run? Report it here.",
-    url: `https://${BRAND.domain}/bug-report`,
-  },
-};
+const TITLE = "Report a Bug";
+const DESCRIPTION =
+  "Spotted a wrong mana value, a broken run, or another glitch in Storm Count? Send a bug report — steps to reproduce help us fix it fast.";
+
+export const metadata: Metadata = buildMetadata({
+  path: "/bug-report",
+  title: TITLE,
+  description: DESCRIPTION,
+});
+
+const bugReportJsonLd = buildBreadcrumbList([
+  { name: "Home", path: "/" },
+  { name: "Report a Bug", path: "/bug-report" },
+]);
 
 const fieldClass =
   "border border-rule/30 bg-background-deep/60 px-4 py-3 text-sm text-foreground placeholder:text-muted/60 transition-colors duration-200 focus:border-brass-bright focus:outline-none focus:ring-1 focus:ring-brass/40 storm-mono";
@@ -44,6 +50,11 @@ function BugTypeField() {
 export default function BugReportPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
+      <Script
+        id="schema-bug-report"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(bugReportJsonLd) }}
+      />
       <header className="anim-fade-in flex flex-col gap-3">
         <p className="eyebrow">Bug Report</p>
         <h1

@@ -1,6 +1,9 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { BRAND, ROUTES } from "@/lib/constants";
 import { pickRandomQuote } from "@/lib/quotes";
+import { buildMetadata, buildHowTo, jsonLd } from "@/lib/seo";
 
 /** Format today's UTC date as "May 8, 2026" */
 function todayLabel(): string {
@@ -14,6 +17,42 @@ function todayLabel(): string {
 
 // Re-render on every request so the quote actually rotates.
 export const dynamic = "force-dynamic";
+
+// Use title.absolute so we get exactly "Storm Count — How high is your storm count?"
+// on the home page, bypassing the parent "%s | Storm Count" template.
+export const metadata: Metadata = {
+  ...buildMetadata({
+    path: "/",
+    description: BRAND.description,
+  }),
+  title: {
+    absolute: `${BRAND.name} — ${BRAND.tagline}`,
+  },
+};
+
+const homeHowTo = buildHowTo({
+  name: `How to play ${BRAND.name}`,
+  description:
+    "Storm Count shows you two Magic: The Gathering cards each round. Your job is to guess whether the hidden card's mana value is higher or lower than the revealed anchor card.",
+  steps: [
+    {
+      name: "Look at the anchor card",
+      text: "Every round shows one revealed Magic: The Gathering card with its mana value visible.",
+    },
+    {
+      name: "Guess higher or lower",
+      text: "Decide whether the hidden mystery card has a higher or lower mana value than the anchor.",
+    },
+    {
+      name: "Reveal and chain",
+      text: "If you're right, the mystery card becomes the new anchor and your storm count goes up. If you're wrong in Survival, your run ends.",
+    },
+    {
+      name: "Pick a mode",
+      text: "Daily Challenge is a fixed 50-card sequence everyone plays — your score goes on the global leaderboard. Survival is an endless run with one life.",
+    },
+  ],
+});
 
 type ModeCardProps = {
   href: string;
@@ -174,6 +213,11 @@ export default function Home() {
 
   return (
     <div className="relative flex w-full flex-1 flex-col">
+      <Script
+        id="schema-howto"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(homeHowTo) }}
+      />
       <BackgroundDecor />
 
       <div className="relative z-10 mx-auto flex w-full max-w-6xl flex-1 flex-col items-stretch justify-center gap-8 px-5 py-8 sm:gap-10 sm:px-8 sm:py-12">

@@ -1,28 +1,30 @@
+import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { auth } from "@clerk/nextjs/server";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import { getLeaderboard } from "@/lib/db/leaderboard";
 import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
+import { buildMetadata, buildBreadcrumbList, jsonLd } from "@/lib/seo";
 
 export const dynamic = "force-dynamic";
 
 const CAVERNHOLD_URL = process.env.CAVERNHOLD_AFFILIATE_LINK ?? null;
 
-export const metadata = {
-  title: "Leaderboard",
-  description:
-    "Today's Storm Count daily leaderboard — see the top MTG players ranked by score and speed.",
-  openGraph: {
-    title: "Daily Leaderboard | Storm Count",
-    description: "Top MTG players ranked by score and speed. Can you crack the top 100?",
-    url: "https://stormcount.gg/leaderboard",
-  },
-  twitter: {
-    card: "summary_large_image",
-    title: "Daily Leaderboard | Storm Count",
-    description: "Top MTG players ranked by score and speed. Can you crack the top 100?",
-  },
-};
+const TITLE = "Daily Leaderboard";
+const DESCRIPTION =
+  "Today's Storm Count daily leaderboard — see the top Magic: The Gathering players ranked by score and speed. Can you crack the top 100?";
+
+export const metadata: Metadata = buildMetadata({
+  path: "/leaderboard",
+  title: TITLE,
+  description: DESCRIPTION,
+});
+
+const leaderboardJsonLd = buildBreadcrumbList([
+  { name: "Home", path: "/" },
+  { name: TITLE, path: "/leaderboard" },
+]);
 
 export default async function LeaderboardPage() {
   const today = new Date().toISOString().slice(0, 10);
@@ -45,6 +47,11 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-5 py-12 sm:px-8 sm:py-16">
+      <Script
+        id="schema-leaderboard"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(leaderboardJsonLd) }}
+      />
       {/* Page title */}
       <header className="anim-fade-in flex flex-col items-center gap-6 text-center">
         <h1

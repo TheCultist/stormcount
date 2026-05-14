@@ -1,24 +1,25 @@
 import type { MetadataRoute } from "next";
 import { BRAND } from "@/lib/constants";
+import {
+  archiveLastModified,
+  getArchiveDatesForSitemap,
+} from "@/lib/leaderboard-archive";
 
 const base = `https://${BRAND.domain}`;
 
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 
-  // Generate past 7 days for leaderboard archive URLs
-  const pastDates = Array.from({ length: 7 }, (_, i) => {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - i);
-    return d.toISOString().slice(0, 10);
-  });
-
-  const leaderboardArchiveUrls: MetadataRoute.Sitemap = pastDates.map((date) => ({
-    url: `${base}/leaderboard/${date}`,
-    lastModified: now,
-    changeFrequency: "daily",
-    priority: 0.5,
-  }));
+  const leaderboardArchiveUrls: MetadataRoute.Sitemap = getArchiveDatesForSitemap().map(
+    (date) => ({
+      url: `${base}/leaderboard/${date}`,
+      // Frozen at end of UTC day so crawlers see a stable lastModified and
+      // don't re-fetch historical pages every time the sitemap regenerates.
+      lastModified: archiveLastModified(date),
+      changeFrequency: "yearly",
+      priority: 0.4,
+    }),
+  );
 
   return [
     {
@@ -59,9 +60,15 @@ export default function sitemap(): MetadataRoute.Sitemap {
       priority: 0.3,
     },
     {
-      url: `${base}/privacy`,
+      url: `${base}/bug-report`,
       lastModified: now,
       changeFrequency: "monthly",
+      priority: 0.3,
+    },
+    {
+      url: `${base}/privacy`,
+      lastModified: now,
+      changeFrequency: "yearly",
       priority: 0.2,
     },
   ];

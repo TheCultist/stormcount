@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
 import { auth, currentUser } from "@clerk/nextjs/server";
@@ -6,10 +7,15 @@ import { db } from "@/lib/db";
 import { dailyScores, survivalBests } from "@/lib/db/schema";
 import { ROUTES } from "@/lib/constants";
 import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Profile — Storm Count",
-};
+export const metadata: Metadata = buildMetadata({
+  path: "/profile",
+  title: "Your profile",
+  description:
+    "Your Storm Count profile — daily best, best leaderboard rank, days played, survival streak, and recent runs.",
+  noindex: true,
+});
 
 const CAVERNHOLD_URL = process.env.CAVERNHOLD_AFFILIATE_LINK ?? null;
 

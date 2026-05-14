@@ -1,8 +1,14 @@
+import type { Metadata } from "next";
 import { SignIn } from "@clerk/nextjs";
+import { buildMetadata } from "@/lib/seo";
 
-export const metadata = {
-  title: "Sign in — Storm Count",
-};
+export const metadata: Metadata = buildMetadata({
+  path: "/sign-in",
+  title: "Sign in",
+  description:
+    "Sign in to Storm Count to save your daily scores to the leaderboard. Registration is optional — you can also play anonymously.",
+  noindex: true,
+});
 
 type Props = {
   searchParams: Promise<{ redirect_url?: string }>;

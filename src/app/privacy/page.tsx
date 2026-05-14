@@ -1,23 +1,23 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import Script from "next/script";
 import { BRAND, ROUTES } from "@/lib/constants";
+import { buildMetadata, buildBreadcrumbList, jsonLd } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Privacy Policy",
-  description:
-    "Storm Count privacy policy. What data we collect, how we use it, and your rights under GDPR. Covers Clerk authentication, game scores, cookies, and third-party services.",
-  openGraph: {
-    title: `Privacy Policy | ${BRAND.name}`,
-    description: "How Storm Count handles your data, authentication, and cookies.",
-    url: `https://${BRAND.domain}/privacy`,
-  },
-  twitter: {
-    card: "summary",
-    title: `Privacy Policy | ${BRAND.name}`,
-    description: "How Storm Count handles your data, authentication, and cookies.",
-  },
-  robots: { index: true, follow: false },
-};
+const TITLE = "Privacy Policy";
+const DESCRIPTION =
+  "Storm Count privacy policy. What data we collect, how we use it, and your rights under GDPR. Covers Clerk authentication, game scores, cookies, and third-party services.";
+
+export const metadata: Metadata = buildMetadata({
+  path: "/privacy",
+  title: TITLE,
+  description: DESCRIPTION,
+});
+
+const privacyJsonLd = buildBreadcrumbList([
+  { name: "Home", path: "/" },
+  { name: "Privacy Policy", path: "/privacy" },
+]);
 
 function Section({
   title,
@@ -39,6 +39,11 @@ function Section({
 export default function PrivacyPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
+      <Script
+        id="schema-privacy"
+        type="application/ld+json"
+        dangerouslySetInnerHTML={{ __html: jsonLd(privacyJsonLd) }}
+      />
       {/* Header */}
       <header className="anim-fade-in flex flex-col gap-3">
         <Link
