@@ -513,7 +513,8 @@ export default function DailyGame({
   // ── gate — already played today ───────────────────────────────────────────
   if (status === "gate") {
     return (
-      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-8 px-5 py-20">
+      <div className={`flex flex-1 flex-col items-center gap-8 px-5 py-20 ${cardsVisible ? "" : "justify-center"}`}>
+        <div className="flex w-full max-w-lg flex-col items-center gap-8">
         {/* Header */}
         <div className="flex flex-col items-center gap-3 text-center">
           <p className="eyebrow flex items-center gap-2.5">
@@ -567,14 +568,19 @@ export default function DailyGame({
         >
           View today&apos;s leaderboard →
         </Link>
+        </div>
 
-        {/* Card reveal panel */}
-        <DailyCardsPanel
-          cards={cards}
-          affiliateConfig={affiliateConfig}
-          open={cardsVisible}
-          onToggle={() => setCardsVisible((v) => !v)}
-        />
+        {/* Card reveal panel — outside the max-w-lg column so the grid can go full-width */}
+        {cards.length > 0 && (
+          <div className="mx-auto w-full max-w-6xl">
+            <DailyCardsPanel
+              cards={cards}
+              affiliateConfig={affiliateConfig}
+              open={cardsVisible}
+              onToggle={() => setCardsVisible((v) => !v)}
+            />
+          </div>
+        )}
       </div>
     );
   }
@@ -674,11 +680,11 @@ export default function DailyGame({
 
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">
               {!practiceMode && !scoreUnsaved ? (
-                <Link href={date ? ROUTES.leaderboardDate(date) : ROUTES.leaderboard} className="btn-primary">
+                <Link href={ROUTES.leaderboard} className="btn-primary">
                   See leaderboard
                 </Link>
               ) : !scoreUnsaved ? (
-                <Link href={date ? ROUTES.leaderboardDate(date) : ROUTES.leaderboard} className="btn-ghost">
+                <Link href={ROUTES.leaderboard} className="btn-ghost">
                   Leaderboard
                 </Link>
               ) : null}
