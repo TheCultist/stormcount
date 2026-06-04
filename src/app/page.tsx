@@ -4,6 +4,7 @@ import Script from "next/script";
 import { BRAND, ROUTES } from "@/lib/constants";
 import { pickRandomQuote } from "@/lib/quotes";
 import { buildMetadata, buildHowTo, jsonLd } from "@/lib/seo";
+import { findThemedDayForDate } from "@/lib/themedDays";
 
 /** Format today's UTC date as "May 8, 2026" */
 function todayLabel(): string {
@@ -61,9 +62,11 @@ type ModeCardProps = {
   badge: string;
   accent: "brass" | "moonsilver";
   meta: string;
+  /** Themed-day label shown under the title when today's run is themed. */
+  theme?: string | null;
 };
 
-function ModeCard({ href, title, blurb, badge, accent, meta }: ModeCardProps) {
+function ModeCard({ href, title, blurb, badge, accent, meta, theme }: ModeCardProps) {
   const isBrass = accent === "brass";
 
   // Cobalt (#1e70c0) for daily, Ember (#b83828) for survival
@@ -115,13 +118,28 @@ function ModeCard({ href, title, blurb, badge, accent, meta }: ModeCardProps) {
           </span>
         </div>
 
-        {/* Title */}
-        <h2
-          className="storm-display text-4xl font-bold leading-[1] tracking-[-0.02em] text-foreground transition-colors duration-300 sm:text-5xl"
-          style={{ fontVariationSettings: '"opsz" 144, "SOFT" 20, "WONK" 0' }}
-        >
-          {title}
-        </h2>
+        {/* Title + optional theme subtitle */}
+        <div className="flex flex-col gap-1.5">
+          <h2
+            className="storm-display text-4xl font-bold leading-[1] tracking-[-0.02em] text-foreground transition-colors duration-300 sm:text-5xl"
+            style={{ fontVariationSettings: '"opsz" 144, "SOFT" 20, "WONK" 0' }}
+          >
+            {title}
+          </h2>
+          {theme && (
+            <p
+              className="flex items-center gap-2 text-[11px] font-bold uppercase leading-snug tracking-[0.22em]"
+              style={{ color: borderColorBright, fontFamily: "var(--font-mono)" }}
+            >
+              <span
+                aria-hidden
+                className="h-1.5 w-1.5 shrink-0 rotate-45"
+                style={{ background: borderColorBright }}
+              />
+              {theme}
+            </p>
+          )}
+        </div>
 
         {/* Blurb */}
         <p
@@ -208,8 +226,21 @@ function BackgroundDecor() {
   );
 }
 
-export default function Home() {
+export default async function Home() {
   const quote = pickRandomQuote();
+
+  // Resolve today's themed day (if any) so the mode cards can advertise it.
+  // A DB hiccup here must never break the landing page, so failures degrade
+  // gracefully to "no theme".
+  let theme: Awaited<ReturnType<typeof findThemedDayForDate>> = null;
+  try {
+    theme = await findThemedDayForDate(new Date().toISOString().slice(0, 10));
+  } catch (err) {
+    console.error("[home] themed-day lookup failed:", err);
+  }
+  const dailyTheme = theme?.themeName ?? null;
+  // Survival is only themed when the theme explicitly applies to it (isDaily=false).
+  const survivalTheme = theme && !theme.isDaily ? theme.themeName : null;
 
   return (
     <div className="relative flex w-full flex-1 flex-col">
@@ -278,6 +309,7 @@ export default function Home() {
             blurb="One seeded 50-card run per day. Race the clock, climb the leaderboard, prove your curve."
             accent="brass"
             meta="50 cards · seeded"
+            theme={dailyTheme}
           />
           <ModeCard
             href={ROUTES.survival}
@@ -286,6 +318,7 @@ export default function Home() {
             blurb="Endless mode. No timer, no limit. One wrong answer ends the run. How high is your storm count?"
             accent="moonsilver"
             meta="Endless"
+            theme={survivalTheme}
           />
         </section>
 

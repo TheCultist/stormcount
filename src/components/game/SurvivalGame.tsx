@@ -42,8 +42,11 @@ const SHORTCUTS = [
 
 export default function SurvivalGame({
   affiliateConfig,
+  theme,
 }: {
   affiliateConfig?: AffiliateConfig | null;
+  /** Today's theme, when it applies to Survival (isDaily=false). */
+  theme?: { name: string; description: string } | null;
 }) {
   const {
     status,
@@ -87,6 +90,35 @@ export default function SurvivalGame({
           <p className="storm-mono text-sm text-red-400">
             {error} — check your connection and try again.
           </p>
+        )}
+
+        {/* Theme header + info panel — only on themed days that reach Survival */}
+        {theme && (
+          <div className="flex w-full flex-col items-center gap-8">
+            <div className="flex flex-col items-center gap-2.5 text-center">
+              <p className="eyebrow flex items-center gap-2.5">
+                <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright anim-pulse" />
+                Today&apos;s Theme
+              </p>
+              <h2
+                className="text-2xl font-bold uppercase leading-tight tracking-[0.14em] text-brass-bright sm:text-3xl"
+                style={{ fontFamily: "var(--font-mono)" }}
+              >
+                {theme.name}
+              </h2>
+            </div>
+
+            <article className="codex rim-brass anim-rise-in w-full rounded-md">
+              <header className="flex items-center gap-3 px-5 pt-5 pb-4">
+                <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass-bright" />
+                <p className="eyebrow text-[9px]">About Today&apos;s Theme</p>
+              </header>
+              <span aria-hidden className="rule-brass mx-5 block h-px" />
+              <p className="storm-display-italic px-5 py-4 text-[15px] leading-relaxed text-foreground/85">
+                {theme.description}
+              </p>
+            </article>
+          </div>
         )}
 
         {/* Rules panel */}

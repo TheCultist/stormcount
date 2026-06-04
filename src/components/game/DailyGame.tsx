@@ -459,27 +459,38 @@ export default function DailyGame({
   // ── pregame — first play of the day: show rules ───────────────────────────
   if (status === "pregame") {
     return (
-      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-10 px-5 py-20">
-        {/* Date + theme badge */}
-        <div className="flex flex-col items-center gap-2">
+      <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center justify-center gap-8 px-5 py-20">
+        {/* Eyebrow + illuminated theme title */}
+        <div className="flex flex-col items-center gap-2.5 text-center">
           <p className="eyebrow flex items-center gap-2.5">
             <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright anim-pulse" />
             Daily Challenge
             <span className="text-foreground/40">·</span>
             <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{date}</span>
-            {themed && (
-              <>
-                <span className="text-foreground/40">·</span>
-                <span className="storm-mono text-[10px] tracking-[0.18em] text-brass-bright/80">{themed}</span>
-              </>
-            )}
           </p>
-          {themed && themedDescription && (
-            <p className="max-w-md text-center text-sm italic text-foreground/75">
-              {themedDescription}
-            </p>
+          {themed && (
+            <h2
+              className="text-2xl font-bold uppercase leading-tight tracking-[0.14em] text-brass-bright sm:text-3xl"
+              style={{ fontFamily: "var(--font-mono)" }}
+            >
+              {themed}
+            </h2>
           )}
         </div>
+
+        {/* Theme info panel — mirrors the How-to-Play codex panel */}
+        {themed && themedDescription && (
+          <article className="codex rim-brass anim-rise-in w-full rounded-md">
+            <header className="flex items-center gap-3 px-5 pt-5 pb-4">
+              <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass-bright" />
+              <p className="eyebrow text-[9px]">About Today&apos;s Theme</p>
+            </header>
+            <span aria-hidden className="rule-brass mx-5 block h-px" />
+            <p className="storm-display-italic px-5 py-4 text-[15px] leading-relaxed text-foreground/85">
+              {themedDescription}
+            </p>
+          </article>
+        )}
 
         <RulesPanel />
 

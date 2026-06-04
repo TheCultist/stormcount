@@ -4,6 +4,7 @@ import SurvivalGame from "@/components/game/SurvivalGame";
 import { getAffiliateConfig } from "@/lib/affiliate";
 import { BRAND } from "@/lib/constants";
 import { buildMetadata, buildVideoGame, buildBreadcrumbList, jsonLd } from "@/lib/seo";
+import { findThemedDayForDate } from "@/lib/themedDays";
 
 const TITLE = "Survival Mode";
 const DESCRIPTION =
@@ -29,8 +30,23 @@ const jsonLdBlocks = [
   ]),
 ];
 
-export default function SurvivalPage() {
+export default async function SurvivalPage() {
   const affiliateConfig = getAffiliateConfig();
+
+  // A theme only reaches Survival when it explicitly opts in (isDaily=false).
+  // A DB hiccup must never break the page, so failures degrade to "no theme".
+  let theme: { name: string; description: string } | null = null;
+  try {
+    const themed = await findThemedDayForDate(
+      new Date().toISOString().slice(0, 10),
+    );
+    if (themed && !themed.isDaily) {
+      theme = { name: themed.themeName, description: themed.themeDescription };
+    }
+  } catch (err) {
+    console.error("[survival] themed-day lookup failed:", err);
+  }
+
   return (
     <>
       <Script
@@ -38,7 +54,7 @@ export default function SurvivalPage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(...jsonLdBlocks) }}
       />
-      <SurvivalGame affiliateConfig={affiliateConfig} />
+      <SurvivalGame affiliateConfig={affiliateConfig} theme={theme} />
     </>
   );
 }
