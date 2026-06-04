@@ -3,6 +3,7 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { auth } from "@clerk/nextjs/server";
 import { isAdmin } from "@/lib/auth/admin";
+import { Analytics } from "@vercel/analytics/next";
 
 export const metadata = {
   title: "Admin",
