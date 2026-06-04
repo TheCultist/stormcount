@@ -4,6 +4,7 @@ import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Script from "next/script";
 import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import "./theme-izzet.css";
 import NavBar from "@/components/layout/NavBar";
@@ -184,6 +185,7 @@ export default async function RootLayout({
           <Footer />
           <CookieBanner />
           <Analytics />
+          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>
