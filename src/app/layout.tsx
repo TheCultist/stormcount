@@ -74,10 +74,13 @@ export const metadata: Metadata = {
     locale: BRAND.ogLocale,
     images: [
       {
-        url: "/opengraph-image.png",
+        // NB: the dynamic OG route (app/opengraph-image.tsx) is served at
+        // `/opengraph-image` (no extension); `/opengraph-image.png` 404s.
+        url: "/opengraph-image",
         width: 1200,
         height: 630,
         alt: defaultTitle,
+        type: "image/png",
       },
     ],
   },
@@ -85,7 +88,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: defaultTitle,
     description: BRAND.description,
-    images: ["/opengraph-image.png"],
+    images: ["/opengraph-image"],
   },
   // NB: `metadata.icons` is intentionally omitted. Next.js gives file-based
   // conventions higher priority (`app/icon.png` → <link rel="icon" />) so
