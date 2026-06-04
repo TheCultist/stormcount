@@ -158,7 +158,7 @@ export default async function RootLayout({
   children: React.ReactNode;
 }>) {
   const { userId } = await auth();
-  const adminUser = isAdmin(userId);
+  const adminUser = await isAdmin(userId);
 
   return (
     <ClerkProvider>

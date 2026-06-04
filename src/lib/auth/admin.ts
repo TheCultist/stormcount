@@ -1,21 +1,29 @@
+import { eq } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { users } from "@/lib/db/schema";
+
 /**
  * Admin gating helper.
  *
- * Admin status is read from the `ADMIN_USER_IDS` env var — a
- * comma-separated list of Clerk userIds. There is no DB-backed role table:
- * keeping admins in env makes provisioning easy and prevents privilege
- * escalation via DB writes.
+ * Admin status is stored as the `is_admin` boolean column on the `users`
+ * table. There is no in-app promotion flow: flipping the flag is done
+ * manually via SQL / Drizzle Studio, e.g.
+ *
+ *   UPDATE users SET is_admin = true WHERE id = 'user_2abc...';
+ *
+ * Returns `false` for missing users (e.g. a freshly-signed-in account that
+ * has never submitted a score and therefore has no `users` row yet).
  *
  * Usage:
  *   const { userId } = await auth();
  *   if (!userId) return new Response("Unauthorized", { status: 401 });
- *   if (!isAdmin(userId)) return new Response("Forbidden", { status: 403 });
+ *   if (!(await isAdmin(userId))) return new Response("Forbidden", { status: 403 });
  */
-export function isAdmin(userId: string | null | undefined): boolean {
+export async function isAdmin(userId: string | null | undefined): Promise<boolean> {
   if (!userId) return false;
-  const ids =
-    process.env.ADMIN_USER_IDS?.split(",")
-      .map((id) => id.trim())
-      .filter(Boolean) ?? [];
-  return ids.includes(userId);
+  const row = await db.query.users.findFirst({
+    where: eq(users.id, userId),
+    columns: { isAdmin: true },
+  });
+  return row?.isAdmin ?? false;
 }

@@ -36,7 +36,7 @@ function tomorrow(): string {
  *     force?: boolean  // if true, overwrites an existing seed for that date
  *   }
  *
- * Auth: Clerk-authenticated user whose userId appears in ADMIN_USER_IDS.
+ * Auth: Clerk-authenticated user whose `users.is_admin` is true.
  *
  * Responses:
  *   200 — seed already exists and force was false (no-op)
@@ -53,7 +53,7 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 
@@ -154,7 +154,7 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

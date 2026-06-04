@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Image from "next/image";
 import Link from "next/link";
 import Script from "next/script";
 import { ROUTES } from "@/lib/constants";
@@ -58,6 +59,9 @@ const aboutJsonLd = [
   ]),
 ];
 
+const socialLinkClass =
+  "inline-flex items-center justify-center rounded-full border border-brass/30 bg-surface/40 px-5 py-2 text-sm font-medium text-foreground/85 transition-colors hover:border-brass-bright/60 hover:text-brass-bright";
+
 export default function AboutPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
@@ -87,6 +91,94 @@ export default function AboutPage() {
           higher or lower?
         </p>
       </header>
+
+      {/* Creator & other projects */}
+      <section className="codex rim-brass anim-rise-in flex flex-col gap-7 rounded-md p-8">
+        <div className="flex flex-col items-center gap-5 text-center sm:flex-row sm:items-center sm:gap-6 sm:text-left">
+          <div className="shrink-0 rounded-full border border-brass/30 bg-surface p-1.5">
+            <Image
+              src="/brand/cardboard-cultist.png"
+              alt="Cardboard Cultist logo"
+              width={160}
+              height={160}
+              className="h-24 w-24 rounded-full object-cover sm:h-28 sm:w-28"
+            />
+          </div>
+          <div className="flex flex-col gap-2">
+            <p className="eyebrow text-[10px] text-muted">Made by</p>
+            <h2 className="storm-display text-2xl font-bold leading-none tracking-[-0.01em] text-foreground">
+              Cardboard{" "}
+              <span className="storm-display-italic text-brass-bright">
+                Cultist
+              </span>
+            </h2>
+            <p className="text-sm leading-relaxed text-foreground/75">
+              Storm Count is a personal project by Cardboard Cultist, an MTG
+              content creator focused on Commander, card discovery, and Magic
+              memes.
+            </p>
+          </div>
+        </div>
+
+        <span aria-hidden className="rule-brass" />
+
+        {/* Socials */}
+        <div className="flex flex-col gap-3">
+          <p className="eyebrow text-[10px] text-muted">Follow</p>
+          <div className="flex flex-wrap justify-center gap-3">
+            <a
+              href="https://www.instagram.com/card_cultist/"
+              target="_blank"
+              rel="noreferrer noopener"
+              className={socialLinkClass}
+            >
+              Instagram
+            </a>
+            <a
+              href="https://www.tiktok.com/@cardboardcultist"
+              target="_blank"
+              rel="noreferrer noopener"
+              className={socialLinkClass}
+            >
+              TikTok
+            </a>
+            <a
+              href="https://www.youtube.com/@card_cultist"
+              target="_blank"
+              rel="noreferrer noopener"
+              className={socialLinkClass}
+            >
+              YouTube
+            </a>
+          </div>
+        </div>
+
+        <span aria-hidden className="rule-brass" />
+
+        {/* Sister project */}
+        <div className="flex flex-col gap-3">
+          <p className="eyebrow text-[10px] text-muted">Sister Project</p>
+          <a
+            href="https://www.findthatcard.net"
+            target="_blank"
+            rel="noreferrer noopener"
+            className="group flex items-center justify-between gap-4 rounded-md border border-brass/25 bg-surface/40 px-5 py-4 transition-colors hover:border-brass-bright/60"
+          >
+            <span className="flex flex-col gap-1">
+              <span className="storm-display text-lg font-bold text-foreground transition-colors group-hover:text-brass-bright">
+                Find That Card
+              </span>
+              <span className="text-xs leading-relaxed text-foreground/65">
+                Free MTG card search that turns natural language into Scryfall
+                queries.
+              </span>
+            </span>
+            <span className="storm-mono shrink-0 text-[11px] uppercase tracking-[0.2em] text-muted/70 transition-colors group-hover:text-brass-bright">
+              findthatcard.net →
+            </span>
+          </a>
+        </div>
+      </section>
 
       {/* Main card */}
       <section className="codex rim-brass anim-rise-in flex flex-col gap-7 rounded-md p-8">

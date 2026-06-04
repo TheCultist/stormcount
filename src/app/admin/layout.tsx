@@ -19,8 +19,8 @@ const NAV_LINKS: ReadonlyArray<{ href: string; label: string }> = [
 ];
 
 /**
- * Admin layout — gates the entire `/admin/*` subtree behind an
- * `ADMIN_USER_IDS` membership check and renders the persistent admin nav.
+ * Admin layout — gates the entire `/admin/*` subtree behind the `is_admin`
+ * flag on the `users` table and renders the persistent admin nav.
  *
  * Auth flow:
  *   - Unauthenticated  → redirect to /sign-in?redirect_url=/admin/...
@@ -41,7 +41,7 @@ export default async function AdminLayout({
     redirect("/sign-in?redirect_url=/admin/themed-days");
   }
 
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     redirect("/");
   }
 

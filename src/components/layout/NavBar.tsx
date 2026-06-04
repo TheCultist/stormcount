@@ -12,6 +12,7 @@ const NAV_LINKS = [
   { href: ROUTES.survival, label: "Survival" },
   { href: ROUTES.leaderboard, label: "Leaderboard" },
   { href: ROUTES.profile, label: "Profile" },
+  { href: ROUTES.about, label: "Other Projects" },
 ] as const;
 
 function NavLink({ href, label }: { href: string; label: string }) {

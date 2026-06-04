@@ -59,7 +59,6 @@ Copy `.env.example` to `.env.local` and fill in. Required keys:
 | `SCRYFALL_USER_AGENT` | Friendly UA string sent on every Scryfall call (Scryfall etiquette). |
 | `RESEND_API_KEY` | Resend API key for the contact form. |
 | `CONTACT_EMAIL` | Inbox that receives contact + bug-report submissions. |
-| `ADMIN_USER_IDS` | Comma-separated Clerk userIds allowed to call `/api/admin/*` and view `/admin/*`. |
 
 ---
 
@@ -188,16 +187,25 @@ src/
 
 ## Admin panel
 
-`/admin/*` is gated by `ADMIN_USER_IDS`. To become an admin:
+`/admin/*` is gated by the `is_admin` flag on the `users` table. There is no
+in-app promote/demote UI — flipping the flag is intentionally a manual DB
+operation. To become an admin:
 
-1. Sign in once via Clerk so your user record exists.
-2. Find your userId in the Clerk dashboard (Users → click row → copy "User ID",
-   format `user_2abc…`).
-3. Append it to `ADMIN_USER_IDS` (comma-separated for multiple admins).
-4. Redeploy / restart so the env var takes effect.
+1. Sign in via Clerk **and play a Daily Challenge once** so the `users` row
+   gets created (it's inserted lazily on first score submission). Alternatively
+   insert the row by hand.
+2. Find your Clerk userId (Clerk dashboard → Users → copy "User ID", format
+   `user_2abc…`). Make sure you're looking at the **correct Clerk instance**
+   (dev and production have separate user databases).
+3. Flip the flag via SQL / Drizzle Studio:
+
+   ```sql
+   UPDATE users SET is_admin = true WHERE id = 'user_2abc...';
+   ```
 
 Both the page layout (`src/app/admin/layout.tsx`) and every `/api/admin/*`
-route check `isAdmin()` independently — defence in depth.
+route call `isAdmin()` independently — defence in depth. Each call performs
+a single indexed PK lookup against `users`, so the cost is negligible.
 
 ### Pages
 

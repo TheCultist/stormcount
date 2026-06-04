@@ -22,7 +22,7 @@ export const maxDuration = 300;
  * so this endpoint should be re-run periodically (e.g. daily via a cron) to
  * reflect new MTG releases.
  *
- * Auth: Clerk-authenticated user whose userId appears in ADMIN_USER_IDS.
+ * Auth: Clerk-authenticated user whose `users.is_admin` is true.
  *
  * Responses:
  *   200 — pool refreshed successfully
@@ -37,7 +37,7 @@ export async function POST() {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  if (!isAdmin(userId)) {
+  if (!(await isAdmin(userId))) {
     return NextResponse.json({ error: "Forbidden" }, { status: 403 });
   }
 

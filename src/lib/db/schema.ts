@@ -20,6 +20,9 @@ export const users = pgTable("users", {
   id: text("id").primaryKey(), // Clerk userId (e.g. "user_2abc...")
   username: text("username").notNull(),
   imageUrl: text("image_url"),
+  // Admin gate: set manually via SQL / Drizzle Studio. There is no in-app
+  // promote/demote UI; flipping this flag is the only way in or out.
+  isAdmin: boolean("is_admin").notNull().default(false),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
