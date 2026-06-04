@@ -44,3 +44,6 @@ storm_count_design.pdf
 .vercel
 .env*.local
 tasks/todo.md
+
+# graphify knowledge-graph output
+/graphify-out/

@@ -123,6 +123,7 @@ export default function GameOverScreen({
             >
               <CardBuyRow
                 cardName={lastCard!.name}
+                setName={lastCard!.set_name}
                 affiliateConfig={affiliateConfig}
               />
             </div>

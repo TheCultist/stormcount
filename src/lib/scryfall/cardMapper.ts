@@ -17,6 +17,7 @@ export function toMtgCard(card: ScryfallCard): MtgCard {
     type_line: card.type_line,
     image_uri: imageUris?.normal ?? imageUris?.large ?? imageUris?.small ?? "",
     scryfall_uri: card.scryfall_uri,
+    set_name: card.set_name ?? "",
   };
 }
 

@@ -13,6 +13,12 @@ export type MtgCard = {
   image_uri: string;
   /** Canonical Scryfall page URL — stored for future deep-link use. */
   scryfall_uri: string;
+  /**
+   * Scryfall set name (e.g. "Bloomburrow"). Used to build card-specific
+   * CardTrader affiliate links. May be empty for cards persisted before this
+   * field existed, in which case affiliate links fall back to the hub page.
+   */
+  set_name: string;
 };
 
 export type GameMode = "daily" | "survival";

@@ -294,7 +294,7 @@ function DailyCardItem({
   const [zoomed, setZoomed] = useState(false);
   const shareCode = affiliateConfig?.cardTraderShareCode ?? "thecultist";
   const tcgPartnerLink = affiliateConfig?.tcgPlayerPartnerLink ?? null;
-  const ctUrl = buildCardTraderLink(card.name, shareCode);
+  const ctUrl = buildCardTraderLink(card.name, shareCode, card.set_name);
   const tcgUrl = buildTcgPlayerLink(card.name, tcgPartnerLink);
 
   return (

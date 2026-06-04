@@ -6,6 +6,8 @@ import type { AffiliateConfig } from "@/lib/affiliate";
 
 type CardBuyRowProps = {
   cardName: string;
+  /** Scryfall set name — enables a card-specific CardTrader link when present. */
+  setName?: string | null;
   affiliateConfig: AffiliateConfig;
 };
 
@@ -15,13 +17,18 @@ type CardBuyRowProps = {
  */
 export default function CardBuyRow({
   cardName,
+  setName,
   affiliateConfig,
 }: CardBuyRowProps) {
   const tcgUrl = buildTcgPlayerLink(
     cardName,
     affiliateConfig.tcgPlayerPartnerLink,
   );
-  const ctUrl = buildCardTraderLink(cardName, affiliateConfig.cardTraderShareCode);
+  const ctUrl = buildCardTraderLink(
+    cardName,
+    affiliateConfig.cardTraderShareCode,
+    setName,
+  );
 
   return (
     <div className="codex rim-brass w-full rounded-md px-5 py-4">
