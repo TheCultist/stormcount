@@ -3,6 +3,7 @@ import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
 import { auth } from "@clerk/nextjs/server";
 import Script from "next/script";
+import { Analytics } from "@vercel/analytics/next";
 import "./globals.css";
 import "./theme-izzet.css";
 import NavBar from "@/components/layout/NavBar";
@@ -182,6 +183,7 @@ export default async function RootLayout({
           <main className="relative flex flex-1 flex-col">{children}</main>
           <Footer />
           <CookieBanner />
+          <Analytics />
         </body>
       </html>
     </ClerkProvider>
