@@ -5,6 +5,7 @@ import CardDisplay from "@/components/game/CardDisplay";
 import ScoreDisplay from "@/components/game/ScoreDisplay";
 import GameOverScreen from "@/components/game/GameOverScreen";
 import { useSurvivalGame } from "@/hooks/useSurvivalGame";
+import { ROUTES } from "@/lib/constants";
 import type { GuessDirection } from "@/lib/types";
 import type { AffiliateConfig } from "@/lib/affiliate";
 
@@ -57,6 +58,8 @@ export default function SurvivalGame({
     lastResult,
     isLoading,
     error,
+    scoreUnsaved,
+    scoreAutoSaved,
     start,
     guess,
     restart,
@@ -90,6 +93,15 @@ export default function SurvivalGame({
           <p className="storm-mono text-sm text-red-400">
             {error} — check your connection and try again.
           </p>
+        )}
+
+        {/* Confirmation that a deferred score was recorded after signing in */}
+        {scoreAutoSaved && (
+          <div className="w-full rounded border border-emerald-500/25 bg-emerald-500/5 px-4 py-3 text-center">
+            <p className="text-[13px] leading-relaxed text-foreground/80">
+              Welcome back! Your earlier run has been recorded to your account.
+            </p>
+          </div>
         )}
 
         {/* Theme header + info panel — only on themed days that reach Survival */}
@@ -206,6 +218,8 @@ export default function SurvivalGame({
           lastCard={mystery}
           affiliateConfig={affiliateConfig ?? null}
           onRestart={restart}
+          scoreUnsaved={scoreUnsaved}
+          signInRedirect={ROUTES.survival}
         />
       </div>
     );

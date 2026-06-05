@@ -15,6 +15,10 @@ type GameOverScreenProps = {
   lastCard?: MtgCard | null;
   /** Affiliate config passed from the server page. Null = suppress monetisation. */
   affiliateConfig?: AffiliateConfig | null;
+  /** Run finished while signed out — show a prompt to sign in and record it. */
+  scoreUnsaved?: boolean;
+  /** Where to return after signing in (so the deferred score auto-submits). */
+  signInRedirect?: string;
 };
 
 export default function GameOverScreen({
@@ -24,6 +28,8 @@ export default function GameOverScreen({
   onRestart,
   lastCard,
   affiliateConfig,
+  scoreUnsaved = false,
+  signInRedirect,
 }: GameOverScreenProps) {
   const isDaily = mode === "daily";
   const showAffiliate = mode === "survival" && affiliateConfig != null;
@@ -97,7 +103,30 @@ export default function GameOverScreen({
                   time · {(elapsed_ms / 1000).toFixed(2)}s
                 </span>
               ) : null}
+              {scoreUnsaved && (
+                <span className="border border-crimson/40 bg-crimson/10 px-2.5 py-1 text-crimson-bright">
+                  not saved · sign in required
+                </span>
+              )}
             </div>
+
+            {/* Sign-in prompt when the score couldn't be saved */}
+            {scoreUnsaved && (
+              <div className="w-full rounded border border-brass/25 bg-paper-2/30 px-4 py-3 text-center">
+                <p className="text-[13px] leading-relaxed text-foreground/80">
+                  Great run! Sign in to record your score for your account.
+                </p>
+                <p className="mt-1 text-[11px] text-foreground/50">
+                  Your score is preserved — it will be submitted automatically when you return after signing in.
+                </p>
+                <Link
+                  href={`${ROUTES.signIn}?redirect_url=${encodeURIComponent(signInRedirect ?? ROUTES.survival)}`}
+                  className="btn-primary mt-3 inline-block"
+                >
+                  Sign in / Create account
+                </Link>
+              </div>
+            )}
 
             {/* Actions */}
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">

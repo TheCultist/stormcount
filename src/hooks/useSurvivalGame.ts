@@ -81,6 +81,10 @@ export function useSurvivalGame() {
   const [lastResult, setLastResult] = useState<GuessResult | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  /** Run ended while signed out — score is deferred, awaiting sign-in. */
+  const [scoreUnsaved, setScoreUnsaved] = useState(false);
+  /** A deferred score was auto-submitted after the player signed in. */
+  const [scoreAutoSaved, setScoreAutoSaved] = useState(false);
 
   // Mutable refs — safe to access inside async callbacks / timeouts.
   const queueRef = useRef<MtgCard[]>([]);
@@ -98,6 +102,7 @@ export function useSurvivalGame() {
     submitSurvivalScore(deferred).then((result) => {
       if (result.ok) {
         clearDeferred();
+        setScoreAutoSaved(true);
         // Update display PB if the server reports a higher value.
         if (result.best != null) {
           setPersonalBest((prev) => Math.max(prev, result.best!));
@@ -202,6 +207,8 @@ export function useSurvivalGame() {
     setStatus("idle");
     setLastResult(null);
     setStreak(0);
+    setScoreUnsaved(false);
+    setScoreAutoSaved(false);
 
     // Reset mutable state.
     queueRef.current = [];
@@ -254,8 +261,10 @@ export function useSurvivalGame() {
         // Try to persist the score to the DB.
         submitSurvivalScore(currentStreak).then((result) => {
           if (result.status === 401 || result.status === 403) {
-            // Not signed in — save as deferred so we submit after login.
+            // Not signed in — save as deferred so we submit after login,
+            // and flag the end screen to show the sign-in prompt.
             writeDeferred(currentStreak);
+            setScoreUnsaved(true);
           }
           // On success: DB now holds the best. On other errors: localStorage
           // still has the PB for display, and next run will re-attempt.
@@ -300,6 +309,8 @@ export function useSurvivalGame() {
     lastResult,
     isLoading,
     error,
+    scoreUnsaved,
+    scoreAutoSaved,
     start,
     guess,
     restart,
