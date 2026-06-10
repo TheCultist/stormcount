@@ -108,13 +108,15 @@ export default function LeaderboardTable({
     >
       {/* Column header */}
       <div
-        className="grid grid-cols-[4.5rem_1fr_5.5rem_6rem] items-center gap-3 px-5 py-3 sm:grid-cols-[5.5rem_1fr_6.5rem_7.5rem]"
+        className="grid grid-cols-[2.75rem_minmax(0,1fr)_4.25rem_3.5rem] items-center gap-2 px-3 py-3 sm:grid-cols-[5.5rem_1fr_6.5rem_7.5rem] sm:gap-3 sm:px-5"
         style={{ borderBottom: "1px solid rgba(220,230,240,0.10)" }}
       >
         <span className="storm-mono text-[10px] uppercase tracking-[0.22em] text-foreground/40">Rank</span>
         <span className="storm-mono text-[10px] uppercase tracking-[0.22em] text-foreground/40">Player</span>
         <span className="storm-mono text-right text-[10px] uppercase tracking-[0.22em] text-foreground/40">Score</span>
-        <span className="storm-mono text-right text-[10px] uppercase tracking-[0.22em] text-foreground/40">Time (MM:SS)</span>
+        <span className="storm-mono text-right text-[10px] uppercase tracking-[0.22em] text-foreground/40">
+          Time<span className="hidden sm:inline"> (MM:SS)</span>
+        </span>
       </div>
 
       <ul>
@@ -131,19 +133,19 @@ export default function LeaderboardTable({
                 ...topRowStyle(entry.rank),
                 ...(isMe ? { background: "rgba(30,112,192,0.09)" } : {}),
               }}
-              className={`anim-fade-in stagger group grid grid-cols-[4.5rem_1fr_5.5rem_6rem] items-center gap-3 px-5 ${rowPy} transition-colors duration-200 hover:brightness-110 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-white/[0.05] sm:grid-cols-[5.5rem_1fr_6.5rem_7.5rem]`}
+              className={`anim-fade-in stagger group grid grid-cols-[2.75rem_minmax(0,1fr)_4.25rem_3.5rem] items-center gap-2 px-3 ${rowPy} transition-colors duration-200 hover:brightness-110 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-white/[0.05] sm:grid-cols-[5.5rem_1fr_6.5rem_7.5rem] sm:gap-3 sm:px-5`}
             >
               {/* Rank */}
               <div className="flex items-center gap-2">
                 {isTop ? (
                   <>
                     <CrownIcon
-                      className="h-5 w-5 shrink-0"
+                      className="h-4 w-4 shrink-0 sm:h-5 sm:w-5"
                       style={{ color: CROWN_AMBER }}
                       aria-hidden
                     />
                     <span
-                      className="storm-display text-2xl font-extrabold tabular-nums"
+                      className="storm-display text-lg font-extrabold tabular-nums sm:text-2xl"
                       style={{
                         color: CROWN_AMBER,
                         fontVariationSettings: '"opsz" 96, "WONK" 0',

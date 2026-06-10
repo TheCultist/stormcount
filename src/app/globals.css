@@ -166,9 +166,25 @@ body {
 body {
   font-family: var(--font-sans), ui-sans-serif, system-ui, sans-serif;
   min-height: 100vh;
+  /* dvh tracks mobile browser chrome as it collapses/expands */
+  min-height: 100dvh;
   font-feature-settings: "ss01", "ss02", "cv11";
   -webkit-font-smoothing: antialiased;
   text-rendering: optimizeLegibility;
+}
+
+/* Touch ergonomics — kill the grey tap flash and the double-tap-zoom delay */
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+a,
+button,
+[role="button"],
+input,
+select,
+textarea {
+  touch-action: manipulation;
 }
 
 ::selection {

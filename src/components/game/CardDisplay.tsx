@@ -47,7 +47,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
         className={`codex anim-rise-in ${accentRim} flex flex-col rounded-md`}
       >
         {/* Title bar — name + CMC pill */}
-        <header className="flex items-center justify-between gap-3 px-4 pt-4 pb-3">
+        <header className="flex items-center justify-between gap-2 px-3 pt-3 pb-2 sm:gap-3 sm:px-4 sm:pt-4 sm:pb-3">
           <div className="min-w-0 flex-1">
             <p
               className={`eyebrow text-[9px] ${
@@ -57,7 +57,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
               {isMystery ? "Mystery" : "Anchor"}
             </p>
             <h3
-              className="storm-display mt-0.5 truncate text-[18px] font-semibold leading-tight tracking-[-0.005em] text-foreground"
+              className="storm-display mt-0.5 truncate text-[14px] font-semibold leading-tight tracking-[-0.005em] text-foreground sm:text-[18px]"
               style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
             >
               {card?.name ?? "—"}
@@ -69,7 +69,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
         </header>
 
         {/* Art window — slightly inset, hairline frame */}
-        <div className="px-3">
+        <div className="px-2 sm:px-3">
           <div
             className="relative aspect-[5/7] w-full overflow-hidden rounded-sm"
             style={{
@@ -98,7 +98,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
                       src={card.image_uri}
                       alt={card.name}
                       fill
-                      sizes="(max-width: 640px) 80vw, 384px"
+                      sizes="(max-width: 640px) 50vw, 384px"
                       className="object-cover object-top"
                       draggable={false}
                       style={{ pointerEvents: "none" }}
@@ -110,7 +110,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
                   src={card.image_uri}
                   alt={card.name}
                   fill
-                  sizes="(max-width: 640px) 80vw, 384px"
+                  sizes="(max-width: 640px) 50vw, 384px"
                   className="object-cover"
                   priority
                 />
@@ -140,7 +140,7 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
         </div>
 
         {/* bottom padding so art doesn't butt up against the rim */}
-        <div className="pb-3" />
+        <div className="pb-2 sm:pb-3" />
       </article>
     </div>
   );
@@ -154,16 +154,16 @@ export default function CardDisplay({ card, mode, result }: CardDisplayProps) {
 function ManaBadge({ isMystery, cmc }: { isMystery: boolean; cmc?: number }) {
   return (
     <div
-      className={`flex h-9 w-9 shrink-0 items-center justify-center rounded-full ${
+      className={`flex h-7 w-7 shrink-0 items-center justify-center rounded-full sm:h-9 sm:w-9 ${
         isMystery ? "bg-moonsilver" : "bg-brass"
       }`}
       aria-label={isMystery ? "Hidden mana value" : `Mana value ${cmc ?? "—"}`}
     >
       {isMystery ? (
-        <span className="storm-mono text-[13px] font-bold leading-none text-white/80">?</span>
+        <span className="storm-mono text-[11px] font-bold leading-none text-white/80 sm:text-[13px]">?</span>
       ) : (
         <span
-          className="storm-display text-base font-extrabold leading-none text-white"
+          className="storm-display text-sm font-extrabold leading-none text-white sm:text-base"
           style={{ fontVariationSettings: '"opsz" 96, "WONK" 0' }}
         >
           {cmc ?? "—"}
