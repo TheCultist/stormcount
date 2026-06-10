@@ -12,7 +12,7 @@ export default function Footer() {
         style={{ background: "var(--grad-rule)" }}
       />
 
-      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-5 px-5 py-7 text-[11px] sm:flex-row sm:px-8">
+      <div className="mx-auto flex w-full max-w-6xl flex-col items-center justify-between gap-5 px-5 pt-7 pb-[calc(1.75rem+env(safe-area-inset-bottom))] text-[11px] sm:flex-row sm:px-8 sm:pb-7">
         {/* Colophon — left */}
         <p className="flex items-center gap-2.5">
           <span

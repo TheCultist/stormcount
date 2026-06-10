@@ -4,8 +4,9 @@ import { useState, useRef } from "react";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
+// 16px minimum on mobile — anything smaller makes iOS Safari zoom in on focus.
 const fieldClass =
-  "border border-rule/30 bg-background-deep/60 px-4 py-3 text-sm text-foreground placeholder:text-muted/60 transition-colors duration-200 focus:border-brass-bright focus:outline-none focus:ring-1 focus:ring-brass/40 storm-mono";
+  "border border-rule/30 bg-background-deep/60 px-4 py-3 text-base sm:text-sm text-foreground placeholder:text-muted/60 transition-colors duration-200 focus:border-brass-bright focus:outline-none focus:ring-1 focus:ring-brass/40 storm-mono";
 
 interface Props {
   /** POST endpoint e.g. "/api/contact" or "/api/bug-report" */

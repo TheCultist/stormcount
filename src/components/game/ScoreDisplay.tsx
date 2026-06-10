@@ -13,12 +13,12 @@ export default function ScoreDisplay({
   const pct = hasTotal ? Math.min(100, (score / total!) * 100) : 0;
 
   return (
-    <div className="codex rim-brass flex min-w-[12rem] flex-col gap-2.5 rounded-md px-5 py-3.5">
-      <div className="flex items-center justify-between gap-4">
+    <div className="codex rim-brass flex min-w-[8.5rem] flex-col gap-2 rounded-md px-4 py-2.5 sm:min-w-[12rem] sm:gap-2.5 sm:px-5 sm:py-3.5">
+      <div className="flex items-center justify-between gap-3 sm:gap-4">
         <span className="eyebrow text-[10px] text-muted">{label}</span>
         <div className="flex items-baseline gap-1">
           <span
-            className="storm-mono text-2xl font-bold tabular-nums text-brass-bright"
+            className="storm-mono text-xl font-bold tabular-nums text-brass-bright sm:text-2xl"
             style={{
               textShadow: "0 0 16px rgba(232,193,129,0.35)",
             }}

@@ -240,7 +240,7 @@ function CardZoomModal({
     >
       {/* Modal card — stop propagation so clicks inside don't close */}
       <div
-        className="codex rim-brass relative flex w-full max-w-sm flex-col gap-4 rounded-md p-5"
+        className="codex rim-brass relative flex max-h-[90dvh] w-full max-w-sm flex-col gap-4 overflow-y-auto rounded-md p-5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
@@ -715,9 +715,9 @@ export default function DailyGame({
   return (
     <div className="mx-auto flex w-full max-w-6xl flex-1 flex-col gap-4 px-5 py-4 sm:gap-5 sm:px-8 sm:py-5">
       {/* Header */}
-      <header className="anim-fade-in flex flex-col items-start justify-between gap-5 sm:flex-row sm:items-end">
-        <div className="flex flex-col gap-2.5">
-          <p className="eyebrow flex items-center gap-2.5">
+      <header className="anim-fade-in flex items-start justify-between gap-4 sm:items-end">
+        <div className="flex min-w-0 flex-col gap-2 sm:gap-2.5">
+          <p className="eyebrow flex flex-wrap items-center gap-x-2.5 gap-y-1">
             <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright anim-pulse" />
             {practiceMode ? (
               <span className="text-foreground/60">Practice</span>
@@ -734,7 +734,7 @@ export default function DailyGame({
             )}
           </p>
           <h1
-            className="storm-display text-4xl font-extrabold leading-[0.95] tracking-[-0.02em] text-foreground sm:text-5xl"
+            className="storm-display text-2xl font-extrabold leading-[0.95] tracking-[-0.02em] text-foreground sm:text-5xl"
             style={{ fontVariationSettings: '"opsz" 144, "SOFT" 50, "WONK" 1' }}
           >
             Higher{" "}
@@ -743,7 +743,7 @@ export default function DailyGame({
           </h1>
         </div>
 
-        <div className="flex flex-col items-end gap-2">
+        <div className="flex shrink-0 flex-col items-end gap-2">
           <ScoreDisplay score={score} total={totalRounds} />
           <p className="storm-mono text-[10px] uppercase tracking-[0.2em] text-foreground/65">
             round {round + 1} of {totalRounds}
@@ -780,11 +780,11 @@ export default function DailyGame({
         )}
       </div>
 
-      {/* Versus arena */}
-      <section className="flex flex-col items-center gap-6 lg:flex-row lg:items-center lg:justify-center lg:gap-8">
+      {/* Versus arena — mobile: cards side by side, buttons beneath; lg: row */}
+      <section className="grid grid-cols-2 items-start justify-items-center gap-3 lg:flex lg:items-center lg:justify-center lg:gap-8">
         <CardDisplay card={anchor} mode="anchor" />
 
-        <div className="flex w-full flex-row gap-3 lg:w-auto lg:flex-col lg:items-center lg:gap-2">
+        <div className="order-2 col-span-2 flex w-full flex-row gap-3 lg:order-none lg:w-auto lg:flex-col lg:items-center lg:gap-2">
           <ActionButton direction="higher" onClick={() => guess("higher")} disabled={isRevealed} />
 
           <div className="hidden lg:flex lg:flex-col lg:items-center lg:gap-1.5">

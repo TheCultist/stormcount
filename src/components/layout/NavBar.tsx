@@ -23,7 +23,7 @@ function NavLink({ href, label }: { href: string; label: string }) {
   return (
     <Link
       href={href}
-      className={`relative inline-flex items-center px-1 py-1 text-[13px] tracking-wide transition-colors duration-200 ${
+      className={`relative inline-flex items-center whitespace-nowrap px-1 py-2 text-[13px] tracking-wide transition-colors duration-200 ${
         isActive
           ? "storm-display-italic font-semibold text-brass-bright"
           : "text-foreground/65 hover:text-foreground"
@@ -45,7 +45,7 @@ export default function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
   return (
-    <header className="relative w-full border-b border-rule/60">
+    <header className="relative w-full border-b border-rule/60 pt-[env(safe-area-inset-top)]">
       {/* Top hairline highlight */}
       <span
         aria-hidden
@@ -113,7 +113,7 @@ export default function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
               <SignInButton mode="redirect">
                 <button
                   type="button"
-                  className="hidden items-center gap-2 border-y border-brass/30 px-4 py-1.5 text-[10px] font-medium uppercase tracking-[0.22em] text-brass/70 transition-colors hover:border-brass/60 hover:text-brass sm:inline-flex"
+                  className="inline-flex items-center gap-2 border-y border-brass/30 px-3 py-2 text-[10px] font-medium uppercase tracking-[0.22em] text-brass/70 transition-colors hover:border-brass/60 hover:text-brass sm:px-4"
                 >
                   <span className="h-1 w-1 rotate-45 bg-brass/60" />
                   Sign in
@@ -127,19 +127,21 @@ export default function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
       {/* Bottom hairline + tiny center sigil */}
       <span aria-hidden className="rule-brass" />
 
-      {/* Mobile nav */}
-      <ul className="flex items-center justify-around gap-2 px-4 py-3 md:hidden">
-        {NAV_LINKS.map((link) => (
-          <li key={link.href}>
-            <NavLink href={link.href} label={link.label} />
-          </li>
-        ))}
-        {isAdmin && (
-          <li>
-            <NavLink href="/admin/themed-days" label="Admin" />
-          </li>
-        )}
-      </ul>
+      {/* Mobile nav — centered when it fits, horizontally scrollable when it doesn't */}
+      <div className="overflow-x-auto md:hidden" style={{ scrollbarWidth: "none" }}>
+        <ul className="mx-auto flex w-max items-center gap-6 px-5 py-1.5">
+          {NAV_LINKS.map((link) => (
+            <li key={link.href}>
+              <NavLink href={link.href} label={link.label} />
+            </li>
+          ))}
+          {isAdmin && (
+            <li>
+              <NavLink href="/admin/themed-days" label="Admin" />
+            </li>
+          )}
+        </ul>
+      </div>
     </header>
   );
 }
