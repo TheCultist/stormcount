@@ -5,6 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import CardDisplay from "@/components/game/CardDisplay";
 import ScoreDisplay from "@/components/game/ScoreDisplay";
+import ShareScore from "@/components/game/ShareScore";
 import { useDailyGame } from "@/hooks/useDailyGame";
 import { ROUTES } from "@/lib/constants";
 import { buildCardTraderLink, buildTcgPlayerLink } from "@/lib/affiliate";
@@ -676,6 +677,11 @@ export default function DailyGame({
                   Sign in / Create account
                 </Link>
               </div>
+            )}
+
+            {/* Share — once the run is final, not while submitting */}
+            {status === "done" && (
+              <ShareScore mode="daily" score={score} totalRounds={totalRounds} date={date} />
             )}
 
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">

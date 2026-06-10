@@ -1,5 +1,23 @@
 # Lessons
 
+## Social "share" links can't carry the result in text — put it in the URL
+
+**Date:** 2026-06-10
+
+**Symptom:** First version of score sharing passed the score in the share-intent
+text (`sharer.php?quote=…`). Facebook's composer dropped the text entirely and
+rendered only the generic site OG card — the share showed no result at all.
+
+**Root cause:** Several platforms (Facebook above all) ignore prefilled text and
+render only the URL's Open Graph card. The OG card *is* the share.
+
+**Rule for next time:** To share a dynamic result, encode it in a shareable URL
+(`/share?mode=…&score=…`) whose page serves result-specific OG metadata and a
+dynamic OG image (`next/og` ImageResponse). Treat the params as hostile input —
+validate strictly. And keep the og:image route OUT of robots-disallowed paths
+(`/api/` here): social crawlers respect robots.txt when fetching og:image and
+will silently fall back to no image.
+
 ## Clerk `auth.protect()` returns 404 (not 401) for `fetch` requests
 
 **Date:** 2026-06-05

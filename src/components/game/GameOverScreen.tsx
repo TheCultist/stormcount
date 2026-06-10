@@ -5,6 +5,7 @@ import type { GameMode, MtgCard } from "@/lib/types";
 import type { AffiliateConfig } from "@/lib/affiliate";
 import CardBuyRow from "@/components/affiliate/CardBuyRow";
 import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
+import ShareScore from "@/components/game/ShareScore";
 
 type GameOverScreenProps = {
   mode: GameMode;
@@ -127,6 +128,9 @@ export default function GameOverScreen({
                 </Link>
               </div>
             )}
+
+            {/* Share */}
+            <ShareScore mode={mode} score={score} />
 
             {/* Actions */}
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">
