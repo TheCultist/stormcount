@@ -93,11 +93,11 @@ function ModeCard({ href, title, blurb, badge, accent, meta, theme }: ModeCardPr
         style={{ boxShadow: `inset 0 0 0 1.5px ${borderColorBright}60` }}
       />
 
-      <div className="flex flex-1 flex-col gap-5 p-7">
-        {/* Header row — badge + meta */}
-        <div className="flex items-center justify-between">
+      <div className="flex flex-1 flex-col gap-4 p-5 sm:gap-5 sm:p-7">
+        {/* Header row — badge + meta; wraps as two clean lines when narrow */}
+        <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1.5">
           <span
-            className="inline-flex items-center gap-1.5 rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em]"
+            className="inline-flex items-center gap-1.5 whitespace-nowrap rounded px-2.5 py-1 text-[10px] font-bold uppercase tracking-[0.22em]"
             style={{
               background: isBrass ? "rgba(30,112,192,0.28)" : "rgba(184,56,40,0.28)",
               color: borderColorBright,
@@ -111,7 +111,7 @@ function ModeCard({ href, title, blurb, badge, accent, meta, theme }: ModeCardPr
             {badge}
           </span>
           <span
-            className="text-[10px] font-medium uppercase tracking-[0.22em]"
+            className="whitespace-nowrap text-[10px] font-medium uppercase tracking-[0.22em]"
             style={{ color: "var(--foreground-muted)", fontFamily: "var(--font-mono)" }}
           >
             {meta}
