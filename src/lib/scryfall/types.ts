@@ -65,11 +65,11 @@ export interface ScryfallBulkDataEntry {
   type: string; // "oracle_cards" | "default_cards" | "all_cards" | ...
   name: string;
   description: string;
-  download_uri: string;
+  /** CDN URI for the gzipped JSONL archive (one card object per line). */
+  jsonl_download_uri: string;
   updated_at: string;
-  size: number;
-  content_type: string;
-  content_encoding: string;
+  /** Size of the compressed `.jsonl.gz` file in bytes. */
+  compressed_size: number;
 }
 
 export interface ScryfallBulkDataManifest {

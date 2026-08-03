@@ -2,8 +2,8 @@
  * Scryfall bulk-data client.
  *
  * Replaces ~15 paginated `/cards/search` calls (rate-limited, ordering bias)
- * with a single download of Scryfall's `oracle_cards` bulk file (~165MB JSON,
- * one entry per Oracle ID).
+ * with a single download of Scryfall's `oracle_cards` bulk file (~24MB
+ * gzipped JSONL, one entry per Oracle ID).
  *
  * Bulk data is updated daily on Scryfall and is the recommended way to
  * sample uniformly from the entire catalog without hitting the search API
@@ -11,8 +11,11 @@
  *
  * Filters applied here mirror DAILY_SCRYFALL_QUERY / SURVIVAL_SCRYFALL_QUERY
  * but are translated from Scryfall search syntax to plain JS predicates,
- * because bulk data is a flat JSON array — there is no server-side query.
+ * because bulk data is a stream of card objects — there is no server-side query.
  */
+import { createInterface } from "node:readline";
+import { Readable } from "node:stream";
+import { createGunzip } from "node:zlib";
 import type {
   ScryfallBulkDataManifest,
   ScryfallCard,
@@ -68,7 +71,12 @@ export async function fetchBulkManifestUrl(): Promise<string> {
   if (!oracle) {
     throw new Error('Scryfall bulk manifest missing "oracle_cards" entry');
   }
-  return oracle.download_uri;
+  if (!oracle.jsonl_download_uri) {
+    throw new Error(
+      'Scryfall bulk manifest "oracle_cards" entry missing jsonl_download_uri',
+    );
+  }
+  return oracle.jsonl_download_uri;
 }
 
 /**
@@ -155,15 +163,15 @@ function passesPoolFilters(card: ScryfallCard): boolean {
  * return the result as MtgCards ready to insert into `card_pool` or to seed
  * a daily challenge.
  *
- * Memory: the full JSON is ~165MB and is parsed in one pass, then dropped.
- * Vercel's default serverless function memory is 1024MB, well above the
- * working-set peak this incurs (~300MB during JSON.parse).
+ * Format: gzipped JSONL (~24MB compressed). We stream-decompress and parse
+ * one card object per line so peak memory stays well under Vercel's default
+ * 1024MB serverless limit.
  */
 export async function fetchAndFilterBulkCards(): Promise<MtgCard[]> {
   const downloadUrl = await fetchBulkManifestUrl();
 
   const res = await fetch(downloadUrl, {
-    headers: { "User-Agent": SCRYFALL_USER_AGENT, Accept: "application/json" },
+    headers: { "User-Agent": SCRYFALL_USER_AGENT, Accept: "application/gzip" },
     cache: "no-store",
   });
 
@@ -172,10 +180,23 @@ export async function fetchAndFilterBulkCards(): Promise<MtgCard[]> {
     throw new Error(`Scryfall bulk download ${res.status}: ${body}`);
   }
 
-  const cards = (await res.json()) as ScryfallCard[];
+  if (!res.body) {
+    throw new Error("Scryfall bulk download returned an empty body");
+  }
+
+  // fetch() gives a Web ReadableStream; Node zlib expects a Node stream.
+  const nodeStream = Readable.fromWeb(
+    res.body as import("node:stream/web").ReadableStream,
+  );
+  const gunzip = createGunzip();
+  const lines = createInterface({ input: nodeStream.pipe(gunzip) });
 
   const filtered: MtgCard[] = [];
-  for (const card of cards) {
+  for await (const line of lines) {
+    const trimmed = line.trim();
+    if (!trimmed) continue;
+
+    const card = JSON.parse(trimmed) as ScryfallCard;
     if (passesPoolFilters(card)) {
       filtered.push(toMtgCard(card));
     }
