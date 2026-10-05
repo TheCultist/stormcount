@@ -1,12 +1,12 @@
 "use client";
 
-import { useEffect } from "react";
-import CardDisplay from "@/components/game/CardDisplay";
 import ScoreDisplay from "@/components/game/ScoreDisplay";
 import GameOverScreen from "@/components/game/GameOverScreen";
+import VersusArena from "@/components/game/VersusArena";
+import { RulesPanel, ThemePanel, ThemeTitle, TieRulePill, type RuleEntry } from "@/components/game/GamePanels";
+import { useGuessHotkeys } from "@/hooks/useGuessHotkeys";
 import { useSurvivalGame } from "@/hooks/useSurvivalGame";
 import { ROUTES } from "@/lib/constants";
-import type { GuessDirection } from "@/lib/types";
 import type { AffiliateConfig } from "@/lib/affiliate";
 
 // ── Static rules data ─────────────────────────────────────────────────────
@@ -32,12 +32,7 @@ const RULES = [
     heading: "Get it wrong and it's over",
     body: "Each correct guess adds to your streak. Miss once and the run ends. No second chances — just try to beat your best.",
   },
-] as const;
-
-const SHORTCUTS = [
-  { kbd: "↑ / W", label: "Higher or Equal" },
-  { kbd: "↓ / S", label: "Lower" },
-] as const;
+] as const satisfies readonly RuleEntry[];
 
 // ── Component ─────────────────────────────────────────────────────────────
 
@@ -68,22 +63,7 @@ export default function SurvivalGame({
   const isRevealed = status === "revealed";
 
   // Keyboard shortcuts — ↑/W = higher, ↓/S = lower.
-  useEffect(() => {
-    if (status !== "playing") return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.repeat) return;
-      const k = e.key.toLowerCase();
-      if (k === "arrowup" || k === "w") {
-        e.preventDefault();
-        guess("higher");
-      } else if (k === "arrowdown" || k === "s") {
-        e.preventDefault();
-        guess("lower");
-      }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [status, guess]);
+  useGuessHotkeys(status === "playing", guess);
 
   // ── idle / loading ───────────────────────────────────────────────────────
   if (status === "idle" || isLoading) {
@@ -112,81 +92,14 @@ export default function SurvivalGame({
                 <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright anim-pulse" />
                 Today&apos;s Theme
               </p>
-              <h2
-                className="text-2xl font-bold uppercase leading-tight tracking-[0.14em] text-brass-bright sm:text-3xl"
-                style={{ fontFamily: "var(--font-mono)" }}
-              >
-                {theme.name}
-              </h2>
+              <ThemeTitle>{theme.name}</ThemeTitle>
             </div>
 
-            <article className="codex rim-brass anim-rise-in w-full rounded-md">
-              <header className="flex items-center gap-3 px-5 pt-5 pb-4">
-                <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass-bright" />
-                <p className="eyebrow text-[9px]">About Today&apos;s Theme</p>
-              </header>
-              <span aria-hidden className="rule-brass mx-5 block h-px" />
-              <p className="storm-display-italic px-5 py-4 text-[15px] leading-relaxed text-foreground/85">
-                {theme.description}
-              </p>
-            </article>
+            <ThemePanel description={theme.description} />
           </div>
         )}
 
-        {/* Rules panel */}
-        <article className="codex rim-brass anim-rise-in w-full rounded-md">
-          {/* Panel header */}
-          <header className="flex items-center gap-3 px-5 pt-5 pb-4">
-            <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass-bright" />
-            <p className="eyebrow text-[9px]">How to Play</p>
-          </header>
-
-          <span aria-hidden className="rule-brass mx-5 block h-px" />
-
-          {/* Rule rows */}
-          <ol className="flex flex-col gap-0 px-5 py-4">
-            {RULES.map(({ num, heading, body }) => (
-              <li key={num} className="flex gap-4 py-3 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-rule/30">
-                <span
-                  className="storm-display mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-brass/40 bg-paper-3/60 text-[10px] font-bold text-brass-bright"
-                  aria-hidden
-                >
-                  {num}
-                </span>
-                <div className="flex flex-col gap-0.5">
-                  <span
-                    className="storm-display text-[13px] font-semibold leading-snug text-foreground"
-                    style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
-                  >
-                    {heading}
-                  </span>
-                  <span className="storm-mono text-[11px] leading-relaxed text-foreground-muted">
-                    {body}
-                  </span>
-                </div>
-              </li>
-            ))}
-          </ol>
-
-          <span aria-hidden className="rule-brass mx-5 block h-px" />
-
-          {/* Keyboard shortcuts */}
-          <footer className="flex items-center justify-between gap-4 px-5 py-4">
-            <p className="storm-mono text-[9px] uppercase tracking-[0.22em] text-muted/70">
-              Keyboard
-            </p>
-            <div className="flex items-center gap-4">
-              {SHORTCUTS.map(({ kbd, label }) => (
-                <span key={kbd} className="flex items-center gap-1.5">
-                  <kbd className="storm-mono inline-flex items-center justify-center rounded-sm border border-rule/60 bg-background-deep/50 px-1.5 py-0.5 text-[10px] font-medium text-muted/80">
-                    {kbd}
-                  </kbd>
-                  <span className="storm-mono text-[10px] text-foreground/60">{label}</span>
-                </span>
-              ))}
-            </div>
-          </footer>
-        </article>
+        <RulesPanel rules={RULES} footerTone="muted" />
 
         {/* Start CTA */}
         <div className="flex flex-col items-center gap-3">
@@ -213,7 +126,6 @@ export default function SurvivalGame({
     return (
       <div className="flex flex-1 items-start justify-center px-5 py-10 sm:items-center sm:px-8 sm:py-14">
         <GameOverScreen
-          mode="survival"
           score={streak}
           lastCard={mystery}
           affiliateConfig={affiliateConfig ?? null}
@@ -261,143 +173,16 @@ export default function SurvivalGame({
       </header>
 
       {/* Tie-rule hint */}
-      <p className="storm-mono inline-flex w-fit items-center gap-2.5 self-start border border-rule/40 bg-paper/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-foreground/70">
-        <span aria-hidden className="h-1 w-1 rotate-45 bg-moonsilver" />
-        Tie rule · equal mv counts as Higher or Equal
-      </p>
+      <TieRulePill accent="moonsilver" className="self-start" />
 
-      {/*
-       * Versus arena + action buttons.
-       *
-       * Mobile  (grid): Anchor | Mystery side by side → [Higher | Lower row]
-       * Desktop (lg:flex-row): Anchor | [▲Higher / vs / ▼Lower col] | Mystery
-       */}
-      <section className="grid grid-cols-2 items-start justify-items-center gap-3 lg:flex lg:items-center lg:justify-center lg:gap-8">
-        <CardDisplay card={anchor} mode="anchor" />
-
-        {/* Connector column — houses action buttons on both breakpoints.
-            order-2 sends it below both cards in the mobile grid. */}
-        <div className="order-2 col-span-2 flex w-full flex-row gap-3 lg:order-none lg:w-auto lg:flex-col lg:items-center lg:gap-2">
-          <ActionButton
-            direction="higher"
-            onClick={() => guess("higher")}
-            disabled={isRevealed}
-          />
-
-          {/* vs badge + decorative lines — desktop only */}
-          <div className="hidden lg:flex lg:flex-col lg:items-center lg:gap-1.5">
-            <span
-              aria-hidden
-              className="h-8 w-px bg-gradient-to-b from-transparent via-brass/40 to-transparent"
-            />
-            <span
-              className="storm-display relative flex h-12 w-12 items-center justify-center rounded-full border border-brass/50 bg-background-deep/70 text-[11px] font-extrabold uppercase tracking-[0.3em] text-brass-bright"
-              style={{ fontVariationSettings: '"opsz" 96, "WONK" 1' }}
-            >
-              <span
-                aria-hidden
-                className="absolute inset-[-4px] rounded-full opacity-60 blur-md"
-                style={{
-                  background:
-                    "radial-gradient(circle, rgba(232,193,129,0.4), transparent 70%)",
-                }}
-              />
-              <span className="relative">vs</span>
-            </span>
-            <span
-              aria-hidden
-              className="h-8 w-px bg-gradient-to-b from-transparent via-moonsilver/40 to-transparent"
-            />
-          </div>
-
-          <ActionButton
-            direction="lower"
-            onClick={() => guess("lower")}
-            disabled={isRevealed}
-          />
-        </div>
-
-        <CardDisplay
-          card={mystery}
-          mode={isRevealed ? "anchor" : "mystery"}
-          result={isRevealed ? lastResult : null}
-        />
-      </section>
-    </div>
-  );
-}
-
-// ── ActionButton ─────────────────────────────────────────────────────────────
-
-const ACTION_CONFIG: Record<
-  GuessDirection,
-  { glyph: string; labelFull: string; labelShort: string; kbd: string }
-> = {
-  higher: { glyph: "▲", labelFull: "Higher or Equal", labelShort: "Higher ≥", kbd: "↑" },
-  lower:  { glyph: "▼", labelFull: "Lower",           labelShort: "Lower",    kbd: "↓" },
-};
-
-function ActionButton({
-  direction,
-  onClick,
-  disabled,
-}: {
-  direction: GuessDirection;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  const { glyph, labelFull, labelShort, kbd } = ACTION_CONFIG[direction];
-  const isLower = direction === "lower";
-
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={labelFull}
-      className={`codex ${isLower ? "rim-moonsilver" : "rim-brass"} group relative isolate flex flex-1 items-center justify-center gap-3 overflow-hidden rounded-md px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40 lg:w-48 lg:flex-none lg:justify-between lg:px-5 lg:py-3`}
-    >
-      {/* Hover wash */}
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{
-          background: isLower
-            ? "radial-gradient(ellipse at center, rgba(180,60,40,0.18), transparent 70%)"
-            : "radial-gradient(ellipse at center, rgba(232,193,129,0.16), transparent 70%)",
-        }}
+      <VersusArena
+        anchor={anchor}
+        mystery={mystery}
+        isRevealed={isRevealed}
+        lastResult={lastResult}
+        onGuess={guess}
+        lowerAccent="moonsilver"
       />
-
-      {/* Glyph stamp */}
-      <span
-        aria-hidden
-        className={`storm-display flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border text-sm transition-colors duration-300 ${
-          isLower
-            ? "border-moonsilver/40 bg-paper-3/60 text-moonsilver-bright group-hover:border-moonsilver-bright group-hover:text-moonsilver-bright"
-            : "border-brass/40 bg-paper-3/60 text-brass-bright group-hover:border-brass-bright group-hover:text-brass-bright"
-        }`}
-      >
-        {glyph}
-      </span>
-
-      {/* Label — short on mobile, full on desktop */}
-      <span
-        className={`storm-display text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground transition-colors duration-300 lg:flex-1 ${
-          isLower ? "group-hover:text-moonsilver-bright" : "group-hover:text-brass-bright"
-        }`}
-        style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
-      >
-        <span className="lg:hidden">{labelShort}</span>
-        <span className="hidden lg:inline">{labelFull}</span>
-      </span>
-
-      {/* Keyboard hint — desktop only */}
-      <kbd
-        aria-hidden
-        className="storm-mono hidden items-center justify-center rounded-sm border border-rule/60 bg-background-deep/40 px-1.5 py-0.5 text-[10px] font-medium text-muted/80 lg:inline-flex"
-      >
-        {kbd}
-      </kbd>
-    </button>
+    </div>
   );
 }

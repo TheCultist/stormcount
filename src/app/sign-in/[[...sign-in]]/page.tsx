@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { SignIn } from "@clerk/nextjs";
 import { buildMetadata } from "@/lib/seo";
+import { safeRedirectPath } from "@/lib/safeRedirect";
 
 export const metadata: Metadata = buildMetadata({
   path: "/sign-in",
@@ -17,7 +18,7 @@ type Props = {
 export default async function SignInPage({ searchParams }: Props) {
   const { redirect_url } = await searchParams;
   // Only allow same-origin (relative) redirects to prevent open-redirect attacks.
-  const safeRedirect = redirect_url?.startsWith("/") ? redirect_url : undefined;
+  const safeRedirect = safeRedirectPath(redirect_url);
 
   return (
     <div className="mx-auto flex w-full max-w-lg flex-1 flex-col items-center gap-8 px-5 py-16 sm:px-8">

@@ -9,11 +9,10 @@
  * sample uniformly from the entire catalog without hitting the search API
  * rate limit. See https://scryfall.com/docs/api/bulk-data
  *
- * Filters applied here mirror DAILY_SCRYFALL_QUERY / SURVIVAL_SCRYFALL_QUERY
+ * Filters applied here mirror SURVIVAL_SCRYFALL_QUERY (the pool query)
  * but are translated from Scryfall search syntax to plain JS predicates,
  * because bulk data is a stream of card objects — there is no server-side query.
  */
-import { createInterface } from "node:readline";
 import { Readable } from "node:stream";
 import { createGunzip } from "node:zlib";
 import type {
@@ -22,10 +21,10 @@ import type {
 } from "./types";
 import type { MtgCard } from "@/lib/types";
 import { toMtgCard } from "./cardMapper";
+import { SCRYFALL_BASE_URL, scryfallFetch } from "./http";
 
-const SCRYFALL_BASE_URL = "https://api.scryfall.com";
-const SCRYFALL_USER_AGENT =
-  process.env.SCRYFALL_USER_AGENT ?? "stormcount/1.0 (+https://stormcount.gg)";
+/** Whole bulk download (~24MB) must finish well inside the function budget. */
+const BULK_DOWNLOAD_TIMEOUT_MS = 120_000;
 
 /** Scryfall layouts considered "extra" (tokens, art series, schemes, …). */
 const EXTRA_LAYOUTS = new Set([
@@ -56,10 +55,7 @@ const EXCLUDED_TYPE_KEYWORDS = ["Land", "Dungeon", "Conspiracy", "Token"];
  * `unique:cards` from our search queries (no second dedup step needed).
  */
 export async function fetchBulkManifestUrl(): Promise<string> {
-  const res = await fetch(`${SCRYFALL_BASE_URL}/bulk-data`, {
-    headers: { "User-Agent": SCRYFALL_USER_AGENT, Accept: "application/json" },
-    cache: "no-store",
-  });
+  const res = await scryfallFetch(`${SCRYFALL_BASE_URL}/bulk-data`);
 
   if (!res.ok) {
     const body = await res.text().catch(() => res.statusText);
@@ -80,7 +76,7 @@ export async function fetchBulkManifestUrl(): Promise<string> {
 }
 
 /**
- * Apply the same exclusions as DAILY_SCRYFALL_QUERY / SURVIVAL_SCRYFALL_QUERY
+ * Apply the same exclusions as SURVIVAL_SCRYFALL_QUERY
  * to a raw bulk-data card.
  *
  * Conditions (mirrors the Scryfall query strings):
@@ -170,9 +166,9 @@ function passesPoolFilters(card: ScryfallCard): boolean {
 export async function fetchAndFilterBulkCards(): Promise<MtgCard[]> {
   const downloadUrl = await fetchBulkManifestUrl();
 
-  const res = await fetch(downloadUrl, {
-    headers: { "User-Agent": SCRYFALL_USER_AGENT, Accept: "application/gzip" },
-    cache: "no-store",
+  const res = await scryfallFetch(downloadUrl, {
+    accept: "application/gzip",
+    timeoutMs: BULK_DOWNLOAD_TIMEOUT_MS,
   });
 
   if (!res.ok) {
@@ -185,21 +181,30 @@ export async function fetchAndFilterBulkCards(): Promise<MtgCard[]> {
   }
 
   // fetch() gives a Web ReadableStream; Node zlib expects a Node stream.
-  const nodeStream = Readable.fromWeb(
+  // `.pipe()` does not forward source errors, so a mid-download reset or the
+  // timeout abort is forwarded by hand — `for await` over gunzip then rejects
+  // instead of hanging until maxDuration.
+  const source = Readable.fromWeb(
     res.body as import("node:stream/web").ReadableStream,
   );
   const gunzip = createGunzip();
-  const lines = createInterface({ input: nodeStream.pipe(gunzip) });
+  source.on("error", (err) => gunzip.destroy(err));
+  source.pipe(gunzip).setEncoding("utf8");
 
   const filtered: MtgCard[] = [];
-  for await (const line of lines) {
+  const handleLine = (line: string) => {
     const trimmed = line.trim();
-    if (!trimmed) continue;
-
+    if (!trimmed) return;
     const card = JSON.parse(trimmed) as ScryfallCard;
-    if (passesPoolFilters(card)) {
-      filtered.push(toMtgCard(card));
-    }
+    if (passesPoolFilters(card)) filtered.push(toMtgCard(card));
+  };
+
+  let buffered = "";
+  for await (const chunk of gunzip as AsyncIterable<string>) {
+    const lines = (buffered + chunk).split("\n");
+    buffered = lines.pop() ?? "";
+    lines.forEach(handleLine);
   }
+  handleLine(buffered);
   return filtered;
 }

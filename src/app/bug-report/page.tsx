@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { ROUTES } from "@/lib/constants";
 import ContactFormClient from "@/components/forms/ContactFormClient";
 import { buildMetadata, buildBreadcrumbList, jsonLd } from "@/lib/seo";
@@ -50,7 +49,7 @@ function BugTypeField() {
 export default function BugReportPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
-      <Script
+      <script
         id="schema-bug-report"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(bugReportJsonLd) }}

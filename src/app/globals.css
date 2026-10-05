@@ -320,17 +320,6 @@ textarea {
     0 8px 16px -12px rgba(0, 0, 0, 0.6);
 }
 
-.codex-strong {
-  position: relative;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(237, 228, 207, 0.04), transparent 40%),
-    linear-gradient(180deg, var(--paper-3) 0%, var(--paper-2) 60%, var(--paper) 100%);
-  border: 1px solid var(--border);
-  box-shadow:
-    0 1px 0 rgba(237, 228, 207, 0.05) inset,
-    0 32px 60px -28px rgba(0, 0, 0, 0.9);
-}
-
 /* Hairline brass rim — subtle, not a glow */
 .rim-brass {
   position: relative;
@@ -396,27 +385,6 @@ textarea {
   );
 }
 
-/* Decorative bookend — section divider w/ centred mark */
-.rule-bookend {
-  display: flex;
-  align-items: center;
-  gap: 1rem;
-  width: 100%;
-}
-
-.rule-bookend::before,
-.rule-bookend::after {
-  content: "";
-  flex: 1;
-  height: 1px;
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    var(--rule) 50%,
-    transparent 100%
-  );
-}
-
 /* =========================================================================
    Typography
    ========================================================================= */
@@ -445,110 +413,6 @@ textarea {
   font-weight: 500;
   letter-spacing: 0.22em;
   text-transform: uppercase;
-  color: var(--brass);
-}
-
-.brass-text {
-  color: var(--brass-bright);
-}
-
-/* Illuminated capital — drop cap for hero / first letters */
-.dropcap {
-  float: left;
-  font-family: var(--font-display), serif;
-  font-weight: 800;
-  font-size: 4.2em;
-  line-height: 0.85;
-  padding: 0.05em 0.12em 0 0;
-  margin: 0.05em 0.08em 0 0;
-  color: var(--brass-bright);
-  font-feature-settings: "ss01";
-  font-variation-settings: "SOFT" 100, "WONK" 1, "opsz" 144;
-  text-shadow: 0 0 28px rgba(232, 193, 129, 0.35);
-}
-
-/* Legacy classes — kept for backwards-compat during migration */
-.gold-gradient {
-  color: var(--brass-bright);
-}
-
-.plasma-gradient {
-  color: var(--moonsilver-bright);
-}
-
-.glass {
-  /* re-route old `.glass` references to new card-stock look */
-  position: relative;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(237, 228, 207, 0.025), transparent 40%),
-    linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 100%);
-  border: 1px solid var(--border-subtle);
-  box-shadow:
-    0 1px 0 rgba(237, 228, 207, 0.04) inset,
-    0 24px 48px -28px rgba(0, 0, 0, 0.85);
-}
-
-.glass-strong {
-  position: relative;
-  background:
-    radial-gradient(circle at 20% 10%, rgba(237, 228, 207, 0.04), transparent 40%),
-    linear-gradient(180deg, var(--paper-3) 0%, var(--paper) 100%);
-  border: 1px solid var(--border);
-  box-shadow:
-    0 1px 0 rgba(237, 228, 207, 0.05) inset,
-    0 32px 60px -28px rgba(0, 0, 0, 0.9);
-}
-
-.glass-rim {
-  position: relative;
-  isolation: isolate;
-}
-
-.glass-rim::before {
-  content: "";
-  position: absolute;
-  inset: 0;
-  border-radius: inherit;
-  padding: 1px;
-  background: linear-gradient(
-    180deg,
-    rgba(232, 193, 129, 0.45) 0%,
-    rgba(122, 93, 44, 0.15) 50%,
-    rgba(232, 193, 129, 0.28) 100%
-  );
-  -webkit-mask:
-    linear-gradient(#000 0 0) content-box,
-    linear-gradient(#000 0 0);
-  -webkit-mask-composite: xor;
-  mask-composite: exclude;
-  pointer-events: none;
-  z-index: 1;
-}
-
-.glass-rim-gold::before {
-  background: linear-gradient(
-    180deg,
-    rgba(232, 193, 129, 0.55) 0%,
-    rgba(122, 93, 44, 0.18) 50%,
-    rgba(232, 193, 129, 0.32) 100%
-  );
-}
-
-.glass-rim-plasma::before {
-  background: linear-gradient(
-    180deg,
-    rgba(219, 226, 236, 0.45) 0%,
-    rgba(90, 106, 130, 0.18) 50%,
-    rgba(219, 226, 236, 0.28) 100%
-  );
-}
-
-.storm-surface {
-  background: var(--paper);
-  border: 1px solid var(--border-subtle);
-}
-
-.storm-gold {
   color: var(--brass);
 }
 
@@ -659,31 +523,10 @@ textarea {
   50% { opacity: 1; }
 }
 
-@keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
-}
-
-@keyframes sigil-spin {
-  to { transform: rotate(360deg); }
-}
-
 .anim-rise-in { animation: rise-in 600ms var(--ease-out-expo) both; }
 .anim-fade-in { animation: fade-in 800ms var(--ease-out-expo) both; }
 .anim-ink-bleed { animation: ink-bleed 1100ms var(--ease-out-expo) both; }
 .anim-pulse { animation: pulse-soft 3.2s ease-in-out infinite; }
-.anim-spin-slow { animation: sigil-spin 24s linear infinite; }
-
-.shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(232, 193, 129, 0.18) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2.6s linear infinite;
-}
 
 /* Stagger helper — apply with style="--i:0" etc. */
 .stagger { animation-delay: calc(var(--i, 0) * 90ms); }
@@ -698,9 +541,7 @@ textarea {
     scroll-behavior: auto !important;
   }
 
-  .anim-pulse,
-  .anim-spin-slow,
-  .shimmer {
+  .anim-pulse {
     animation: none !important;
   }
 }

@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { BRAND, ROUTES } from "@/lib/constants";
 import { pickRandomQuote } from "@/lib/quotes";
 import { buildMetadata, buildHowTo, jsonLd } from "@/lib/seo";
 import { findThemedDayForDate } from "@/lib/themedDays";
+import { todayUtc } from "@/lib/dates";
 
 /** Format today's UTC date as "May 8, 2026" */
 function todayLabel(): string {
@@ -234,7 +234,7 @@ export default async function Home() {
   // gracefully to "no theme".
   let theme: Awaited<ReturnType<typeof findThemedDayForDate>> = null;
   try {
-    theme = await findThemedDayForDate(new Date().toISOString().slice(0, 10));
+    theme = await findThemedDayForDate(todayUtc());
   } catch (err) {
     console.error("[home] themed-day lookup failed:", err);
   }
@@ -244,7 +244,7 @@ export default async function Home() {
 
   return (
     <div className="relative flex w-full flex-1 flex-col">
-      <Script
+      <script
         id="schema-howto"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(homeHowTo) }}

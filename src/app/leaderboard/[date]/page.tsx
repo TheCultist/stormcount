@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { notFound } from "next/navigation";
 import { auth } from "@clerk/nextjs/server";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
@@ -60,7 +59,7 @@ export default async function HistoricalLeaderboardPage({ params }: PageProps) {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-5 py-12 sm:px-8 sm:py-16">
-      <Script
+      <script
         id="schema-leaderboard-archive"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(archiveJsonLd) }}

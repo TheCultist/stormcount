@@ -253,5 +253,6 @@ export function buildHowTo({
  * `dangerouslySetInnerHTML`.
  */
 export function jsonLd(...nodes: unknown[]): string {
-  return JSON.stringify(nodes.length === 1 ? nodes[0] : nodes);
+  // Escape `<` so a string containing `</script>` can't close the inline tag.
+  return JSON.stringify(nodes.length === 1 ? nodes[0] : nodes).replace(/</g, "\\u003c");
 }

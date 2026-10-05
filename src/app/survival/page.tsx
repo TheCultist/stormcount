@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import SurvivalGame from "@/components/game/SurvivalGame";
 import { getAffiliateConfig } from "@/lib/affiliate";
 import { BRAND } from "@/lib/constants";
 import { buildMetadata, buildVideoGame, buildBreadcrumbList, jsonLd } from "@/lib/seo";
 import { findThemedDayForDate } from "@/lib/themedDays";
+import { todayUtc } from "@/lib/dates";
 
 const TITLE = "Survival Mode";
 const DESCRIPTION =
@@ -30,6 +30,10 @@ const jsonLdBlocks = [
   ]),
 ];
 
+// Today's themed day is resolved per request — a static render would freeze
+// whichever theme was active at build time.
+export const dynamic = "force-dynamic";
+
 export default async function SurvivalPage() {
   const affiliateConfig = getAffiliateConfig();
 
@@ -37,9 +41,7 @@ export default async function SurvivalPage() {
   // A DB hiccup must never break the page, so failures degrade to "no theme".
   let theme: { name: string; description: string } | null = null;
   try {
-    const themed = await findThemedDayForDate(
-      new Date().toISOString().slice(0, 10),
-    );
+    const themed = await findThemedDayForDate(todayUtc());
     if (themed && !themed.isDaily) {
       theme = { name: themed.themeName, description: themed.themeDescription };
     }
@@ -49,7 +51,7 @@ export default async function SurvivalPage() {
 
   return (
     <>
-      <Script
+      <script
         id="schema-survival"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(...jsonLdBlocks) }}

@@ -4,65 +4,55 @@ import {
   SURVIVAL_SCRYFALL_QUERY,
   SURVIVAL_BATCH_SIZE,
 } from "@/lib/scryfall/survivalQuery";
-import type {
-  ScryfallCard,
-  ScryfallSearchResponse,
-} from "@/lib/scryfall/types";
+import type { ScryfallCard } from "@/lib/scryfall/types";
 import type { MtgCard } from "@/lib/types";
 import { db } from "@/lib/db";
 import { cardPool } from "@/lib/db/schema";
 import { findThemedDayForDate } from "@/lib/themedDays";
-import { shuffle, toMtgCard } from "@/lib/scryfall/cardMapper";
+import { shuffle, sleep, toMtgCard } from "@/lib/scryfall/cardMapper";
+import {
+  SCRYFALL_PAGE_SIZE,
+  SCRYFALL_REQUEST_DELAY_MS,
+  searchCardsPage,
+  withPoolFilters,
+} from "@/lib/scryfall/http";
+import { todayUtc } from "@/lib/dates";
 
 // Never cache — every request must return fresh random cards.
 export const dynamic = "force-dynamic";
 
-const SCRYFALL_BASE_URL = "https://api.scryfall.com";
-const SCRYFALL_USER_AGENT =
-  process.env.SCRYFALL_USER_AGENT ?? "stormcount/1.0 (+https://stormcount.gg)";
+/** Upper bound on `exclude` ids honoured per request (the client sends ≤60). */
+const MAX_EXCLUDED = 100;
 
-const SCRYFALL_PAGE_SIZE = 175;
-
-// Two orders × one random page each → 3 sequential calls (within 2 req/s).
-const THEMED_SORT_DIMENSIONS = ["name", "edhrec"] as const;
+// Probe + two orders × one random page → ≤3 throttled calls per pool build.
+const LIVE_SORT_DIMENSIONS = ["name", "edhrec"] as const;
 
 /**
- * Live Scryfall search — used only on themed survival days where the pool
- * has to come from a custom query (community Tagger tags etc., not in bulk).
+ * Live Scryfall candidate pool — used on themed survival days (the pool has to
+ * come from a custom query: community Tagger tags etc., not in bulk) and as
+ * the fallback when `card_pool` is empty. `query` must already include the
+ * pool filters.
+ *
+ * The pool is cached per instance per (query, day) so every batch request of
+ * every player doesn't cost three throttled Scryfall calls.
  */
-async function scryfallSearchPage(
-  query: string,
-  page: number,
-  order: string,
-): Promise<ScryfallSearchResponse> {
-  const url = new URL(`${SCRYFALL_BASE_URL}/cards/search`);
-  url.searchParams.set("q", `prefer:best ${query}`);
-  url.searchParams.set("unique", "cards");
-  url.searchParams.set("order", order);
-  url.searchParams.set("page", page.toString());
+let livePoolCache: { key: string; pool: Promise<MtgCard[]> } | null = null;
 
-  const res = await fetch(url.toString(), {
-    headers: { "User-Agent": SCRYFALL_USER_AGENT, Accept: "application/json" },
-    cache: "no-store",
-  });
-
-  if (!res.ok) {
-    const body = await res.text().catch(() => res.statusText);
-    throw new Error(`Scryfall ${res.status}: ${body}`);
+function getLivePool(query: string): Promise<MtgCard[]> {
+  const key = `${todayUtc()}|${query}`;
+  if (livePoolCache?.key !== key) {
+    const pool = collectLivePool(query);
+    livePoolCache = { key, pool };
+    // Don't cache failures — the next request retries.
+    pool.catch(() => {
+      if (livePoolCache?.pool === pool) livePoolCache = null;
+    });
   }
-  return res.json() as Promise<ScryfallSearchResponse>;
+  return livePoolCache.pool;
 }
 
-/**
- * Themed-survival fetch — re-implements the multi-order live search used
- * before the bulk migration, but with the themed query string instead of
- * the static SURVIVAL_SCRYFALL_QUERY.
- */
-async function fetchThemedSurvivalCards(
-  query: string,
-  excluded: Set<string>,
-): Promise<MtgCard[]> {
-  const probe = await scryfallSearchPage(query, 1, "name");
+async function collectLivePool(query: string): Promise<MtgCard[]> {
+  const probe = await searchCardsPage(query, 1, "name");
   const maxPage = Math.max(
     1,
     Math.ceil(probe.total_cards / SCRYFALL_PAGE_SIZE),
@@ -70,60 +60,57 @@ async function fetchThemedSurvivalCards(
 
   const seen = new Set<string>();
   const pool: ScryfallCard[] = [];
-
-  for (const order of THEMED_SORT_DIMENSIONS) {
-    const randomPage = Math.floor(Math.random() * maxPage) + 1;
-    const pageData = await scryfallSearchPage(query, randomPage, order);
-    for (const card of pageData.data) {
+  const addAll = (cards: ScryfallCard[]) => {
+    for (const card of cards) {
       if (!seen.has(card.id)) {
         seen.add(card.id);
         pool.push(card);
       }
     }
-  }
+  };
 
-  return shuffle(pool)
-    .filter((c) => !excluded.has(c.id))
-    .slice(0, SURVIVAL_BATCH_SIZE)
-    .map(toMtgCard);
+  addAll(probe.data);
+  if (maxPage > 1) {
+    for (const order of LIVE_SORT_DIMENSIONS) {
+      await sleep(SCRYFALL_REQUEST_DELAY_MS);
+      const randomPage = Math.floor(Math.random() * maxPage) + 1;
+      addAll((await searchCardsPage(query, randomPage, order)).data);
+    }
+  }
+  return pool.map(toMtgCard);
+}
+
+async function fetchLiveSurvivalCards(
+  query: string,
+  excluded: Set<string>,
+): Promise<MtgCard[]> {
+  const pool = await getLivePool(query);
+  return shuffle(pool.filter((c) => !excluded.has(c.id))).slice(
+    0,
+    SURVIVAL_BATCH_SIZE,
+  );
 }
 
 /**
  * Fetch a random batch from the local card_pool table (the normal path).
  *
  * Postgres `ORDER BY random()` is fine here — the table is small (~30k rows)
- * and the query runs in low single-digit ms with the index on `id` already
- * present. We over-fetch slightly so excluded IDs don't shrink the result
- * below the requested batch size in the common case.
+ * and the query runs in low single-digit ms. We over-fetch so excluded IDs
+ * don't shrink the result below the requested batch size.
  */
 async function fetchPoolSurvivalCards(
   excluded: Set<string>,
 ): Promise<MtgCard[]> {
-  const overFetch = Math.min(
-    SURVIVAL_BATCH_SIZE + excluded.size + 10,
-    200,
-  );
-
   const rows = await db
-    .select({ id: cardPool.id, card: cardPool.card })
+    .select({ card: cardPool.card })
     .from(cardPool)
     .orderBy(sql`random()`)
-    .limit(overFetch);
+    .limit(SURVIVAL_BATCH_SIZE + excluded.size + 10);
 
   return rows
     .map((r) => r.card)
     .filter((c) => !excluded.has(c.id))
     .slice(0, SURVIVAL_BATCH_SIZE);
-}
-
-/**
- * Fallback live search when card_pool is empty (admin hasn't refreshed yet).
- * Mirrors the old behaviour so the game still works on first deploy.
- */
-async function fetchLiveSurvivalCards(
-  excluded: Set<string>,
-): Promise<MtgCard[]> {
-  return fetchThemedSurvivalCards(SURVIVAL_SCRYFALL_QUERY, excluded);
 }
 
 /**
@@ -143,18 +130,17 @@ async function fetchLiveSurvivalCards(
  *   exclude — comma-separated card IDs to skip (recently seen cards).
  */
 export async function GET(req: NextRequest) {
-  const { searchParams } = new URL(req.url);
-  const excludeParam = searchParams.get("exclude") ?? "";
-  const excluded = new Set(excludeParam ? excludeParam.split(",") : []);
-
-  const today = new Date().toISOString().slice(0, 10);
+  const excludeParam = req.nextUrl.searchParams.get("exclude") ?? "";
+  const excluded = new Set(
+    excludeParam ? excludeParam.split(",").slice(0, MAX_EXCLUDED) : [],
+  );
 
   try {
     // Step 1 — themed survival day?
-    const theme = await findThemedDayForDate(today);
+    const theme = await findThemedDayForDate(todayUtc());
     if (theme && !theme.isDaily) {
-      const cards = await fetchThemedSurvivalCards(
-        theme.scryfallQuery,
+      const cards = await fetchLiveSurvivalCards(
+        withPoolFilters(theme.scryfallQuery),
         excluded,
       );
       return NextResponse.json({ cards, themed: theme.themeName });
@@ -169,13 +155,12 @@ export async function GET(req: NextRequest) {
         "[survival] card_pool is empty — falling back to live Scryfall. " +
           "Run POST /api/admin/refresh-pool to populate.",
       );
-      cards = await fetchLiveSurvivalCards(excluded);
+      cards = await fetchLiveSurvivalCards(SURVIVAL_SCRYFALL_QUERY, excluded);
     }
 
     return NextResponse.json({ cards });
   } catch (err) {
     console.error("[survival] error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ error: msg }, { status: 502 });
+    return NextResponse.json({ error: "Couldn't load cards" }, { status: 502 });
   }
 }

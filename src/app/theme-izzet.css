@@ -163,27 +163,6 @@
   color: var(--brass);
 }
 
-[data-theme="izzet"] .dropcap {
-  color: #4da8e8;
-  text-shadow: 0 0 28px rgba(77, 168, 232, 0.40), 0 0 60px rgba(30, 112, 192, 0.18);
-}
-
-[data-theme="izzet"] .brass-text {
-  color: #4da8e8;
-}
-
-[data-theme="izzet"] .storm-gold {
-  color: var(--brass);
-}
-
-[data-theme="izzet"] .gold-gradient {
-  color: #4da8e8;
-}
-
-[data-theme="izzet"] .plasma-gradient {
-  color: #d95a40;
-}
-
 /* =========================================================================
    Card surfaces — lab desk patina instead of vellum warmth
    ========================================================================= */
@@ -195,32 +174,11 @@
     linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 100%);
 }
 
-[data-theme="izzet"] .codex-strong {
-  background:
-    radial-gradient(circle at 20% 8%, rgba(30, 112, 192, 0.13), transparent 40%),
-    radial-gradient(circle at 80% 90%, rgba(184, 56, 40, 0.08), transparent 40%),
-    linear-gradient(180deg, var(--paper-3) 0%, var(--paper-2) 60%, var(--paper) 100%);
-}
-
-[data-theme="izzet"] .glass {
-  background:
-    radial-gradient(circle at 20% 8%, rgba(30, 112, 192, 0.05), transparent 40%),
-    linear-gradient(180deg, var(--paper-2) 0%, var(--paper) 100%);
-}
-
-[data-theme="izzet"] .glass-strong {
-  background:
-    radial-gradient(circle at 20% 8%, rgba(30, 112, 192, 0.08), transparent 40%),
-    linear-gradient(180deg, var(--paper-3) 0%, var(--paper) 100%);
-}
-
 /* =========================================================================
    Rim gradients — cobalt for primary, ember for secondary
    ========================================================================= */
 
-[data-theme="izzet"] .rim-brass::before,
-[data-theme="izzet"] .glass-rim::before,
-[data-theme="izzet"] .glass-rim-gold::before {
+[data-theme="izzet"] .rim-brass::before {
   background: linear-gradient(
     180deg,
     rgba(77, 168, 232, 0.55) 0%,
@@ -229,8 +187,7 @@
   );
 }
 
-[data-theme="izzet"] .rim-moonsilver::before,
-[data-theme="izzet"] .glass-rim-plasma::before {
+[data-theme="izzet"] .rim-moonsilver::before {
   background: linear-gradient(
     180deg,
     rgba(217, 90, 64, 0.50) 0%,
@@ -251,19 +208,6 @@
     rgba(30, 112, 192, 0.22) 46%,
     rgba(184, 56, 40, 0.26) 60%,
     rgba(184, 56, 40, 0.48) 76%,
-    transparent 100%
-  );
-}
-
-[data-theme="izzet"] .rule-bookend::before,
-[data-theme="izzet"] .rule-bookend::after {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(30, 112, 192, 0.50) 28%,
-    rgba(30, 112, 192, 0.20) 46%,
-    rgba(184, 56, 40, 0.22) 60%,
-    rgba(184, 56, 40, 0.44) 76%,
     transparent 100%
   );
 }
@@ -311,17 +255,3 @@
   outline-color: #4da8e8;
 }
 
-/* =========================================================================
-   Shimmer — blue arc instead of brass shimmer
-   ========================================================================= */
-
-[data-theme="izzet"] .shimmer {
-  background: linear-gradient(
-    90deg,
-    transparent 0%,
-    rgba(77, 168, 232, 0.18) 50%,
-    transparent 100%
-  );
-  background-size: 200% 100%;
-  animation: shimmer 2.6s linear infinite;
-}

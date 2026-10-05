@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Script from "next/script";
 import DailyGame from "@/components/game/DailyGame";
 import { getAffiliateConfig } from "@/lib/affiliate";
 import { BRAND } from "@/lib/constants";
@@ -33,7 +32,7 @@ export default function DailyPage() {
   const affiliateConfig = getAffiliateConfig();
   return (
     <>
-      <Script
+      <script
         id="schema-daily"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(...jsonLdBlocks) }}

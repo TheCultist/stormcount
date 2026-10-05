@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { auth } from "@clerk/nextjs/server";
 import LeaderboardTable from "@/components/leaderboard/LeaderboardTable";
 import { getLeaderboard } from "@/lib/db/leaderboard";
 import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
 import { buildMetadata, buildBreadcrumbList, jsonLd } from "@/lib/seo";
+import { todayUtc, utcOffsetDate } from "@/lib/dates";
 
 export const dynamic = "force-dynamic";
 
@@ -27,17 +27,13 @@ const leaderboardJsonLd = buildBreadcrumbList([
 ]);
 
 export default async function LeaderboardPage() {
-  const today = new Date().toISOString().slice(0, 10);
+  const today = todayUtc();
   const { userId } = await auth();
 
   const entries = await getLeaderboard(today);
 
   // Build a list of past 6 days for the archive nav (excluding today)
-  const pastDates = Array.from({ length: 6 }, (_, i) => {
-    const d = new Date();
-    d.setUTCDate(d.getUTCDate() - (i + 1));
-    return d.toISOString().slice(0, 10);
-  });
+  const pastDates = Array.from({ length: 6 }, (_, i) => utcOffsetDate(-(i + 1)));
 
   // Format dates as "APR 15" style
   const formatDateTab = (dateStr: string) => {
@@ -47,7 +43,7 @@ export default async function LeaderboardPage() {
 
   return (
     <div className="mx-auto flex w-full max-w-4xl flex-1 flex-col gap-8 px-5 py-12 sm:px-8 sm:py-16">
-      <Script
+      <script
         id="schema-leaderboard"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(leaderboardJsonLd) }}

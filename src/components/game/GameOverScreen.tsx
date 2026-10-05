@@ -1,18 +1,17 @@
 import Image from "next/image";
 import Link from "next/link";
 import { ROUTES } from "@/lib/constants";
-import type { GameMode, MtgCard } from "@/lib/types";
+import type { MtgCard } from "@/lib/types";
 import type { AffiliateConfig } from "@/lib/affiliate";
 import CardBuyRow from "@/components/affiliate/CardBuyRow";
 import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
 import ShareScore from "@/components/game/ShareScore";
 
+/** End-of-run screen for Survival mode. */
 type GameOverScreenProps = {
-  mode: GameMode;
   score: number;
-  elapsed_ms?: number;
   onRestart?: () => void;
-  /** Survival: the last card revealed — shown with buy links after the run. */
+  /** The last card revealed — shown with buy links after the run. */
   lastCard?: MtgCard | null;
   /** Affiliate config passed from the server page. Null = suppress monetisation. */
   affiliateConfig?: AffiliateConfig | null;
@@ -23,17 +22,14 @@ type GameOverScreenProps = {
 };
 
 export default function GameOverScreen({
-  mode,
   score,
-  elapsed_ms,
   onRestart,
   lastCard,
   affiliateConfig,
   scoreUnsaved = false,
   signInRedirect,
 }: GameOverScreenProps) {
-  const isDaily = mode === "daily";
-  const showAffiliate = mode === "survival" && affiliateConfig != null;
+  const showAffiliate = affiliateConfig != null;
   const showCard = showAffiliate && lastCard != null;
 
   return (
@@ -57,7 +53,7 @@ export default function GameOverScreen({
             : "flex-col items-center"
         }`}
       >
-        {/* ── Left: Card preview (survival only) ───────────────────────── */}
+        {/* ── Left: Card preview ────────────────────────────────────────── */}
         {showCard && (
           <div className="w-full sm:w-72 sm:shrink-0">
             <CardPreview card={lastCard} />
@@ -97,13 +93,8 @@ export default function GameOverScreen({
             {/* Metadata stamps */}
             <div className="storm-mono flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[10px] uppercase tracking-[0.22em] text-muted">
               <span className="border border-rule/50 bg-background-deep/30 px-2.5 py-1">
-                mode · {mode}
+                mode · survival
               </span>
-              {typeof elapsed_ms === "number" ? (
-                <span className="border border-rule/50 bg-background-deep/30 px-2.5 py-1">
-                  time · {(elapsed_ms / 1000).toFixed(2)}s
-                </span>
-              ) : null}
               {scoreUnsaved && (
                 <span className="border border-crimson/40 bg-crimson/10 px-2.5 py-1 text-crimson-bright">
                   not saved · sign in required
@@ -130,7 +121,7 @@ export default function GameOverScreen({
             )}
 
             {/* Share */}
-            <ShareScore mode={mode} score={score} />
+            <ShareScore mode="survival" score={score} />
 
             {/* Actions */}
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">
@@ -139,24 +130,21 @@ export default function GameOverScreen({
                   Play again
                 </button>
               ) : null}
-              <Link
-                href={isDaily ? ROUTES.leaderboard : ROUTES.home}
-                className="btn-ghost"
-              >
-                {isDaily ? "Leaderboard" : "Home"}
+              <Link href={ROUTES.home} className="btn-ghost">
+                Home
               </Link>
             </div>
           </div>
 
-          {/* Buy row — survival only */}
-          {showAffiliate ? (
+          {/* Buy row */}
+          {showCard ? (
             <div
               className="anim-fade-in w-full"
               style={{ animationDelay: "100ms" }}
             >
               <CardBuyRow
-                cardName={lastCard!.name}
-                setName={lastCard!.set_name}
+                cardName={lastCard.name}
+                setName={lastCard.set_name}
                 affiliateConfig={affiliateConfig}
               />
             </div>

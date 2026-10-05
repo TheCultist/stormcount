@@ -7,6 +7,10 @@ import {
 
 const base = `https://${BRAND.domain}`;
 
+// Archive URLs are a rolling 30-day window — regenerate daily, or the build-time
+// list drifts into 404s and misses recent days.
+export const revalidate = 86400;
+
 export default function sitemap(): MetadataRoute.Sitemap {
   const now = new Date();
 

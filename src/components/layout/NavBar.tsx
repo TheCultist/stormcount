@@ -40,10 +40,30 @@ function NavLink({ href, label }: { href: string; label: string }) {
   );
 }
 
-export default function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
-  const { isSignedIn, isLoaded } = useUser();
+export default function NavBar() {
+  const { isSignedIn, isLoaded, user } = useUser();
   const [mounted, setMounted] = useState(false);
   useEffect(() => setMounted(true), []);
+
+  // Admin link is cosmetic (admin routes enforce access themselves), so it's
+  // resolved client-side for signed-in users only — keeping the root layout
+  // free of a per-request auth + DB lookup.
+  const [adminFor, setAdminFor] = useState<string | null>(null);
+  const userId = user?.id;
+  useEffect(() => {
+    if (!userId) return;
+    let cancelled = false;
+    fetch("/api/admin/me")
+      .then((res) => (res.ok ? res.json() : null))
+      .then((data: { isAdmin?: boolean } | null) => {
+        if (!cancelled && data?.isAdmin) setAdminFor(userId);
+      })
+      .catch(() => {});
+    return () => {
+      cancelled = true;
+    };
+  }, [userId]);
+  const isAdmin = isSignedIn === true && adminFor === userId;
   return (
     <header className="relative w-full border-b border-rule/60 pt-[env(safe-area-inset-top)]">
       {/* Top hairline highlight */}
@@ -62,7 +82,7 @@ export default function NavBar({ isAdmin = false }: { isAdmin?: boolean }) {
           {/* Mark — logo image */}
           <span className="relative flex h-9 w-9 shrink-0">
             <Image
-              src="/logo.png"
+              src="/logo-nav.png"
               alt={`${BRAND.name} logo`}
               width={36}
               height={36}

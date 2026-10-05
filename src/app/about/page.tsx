@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Image from "next/image";
 import Link from "next/link";
-import Script from "next/script";
 import { ROUTES } from "@/lib/constants";
 import {
   buildMetadata,
@@ -65,7 +64,7 @@ const socialLinkClass =
 export default function AboutPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
-      <Script
+      <script
         id="schema-about"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(...aboutJsonLd) }}

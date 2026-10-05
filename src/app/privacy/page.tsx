@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import Script from "next/script";
 import { BRAND, ROUTES } from "@/lib/constants";
 import { buildMetadata, buildBreadcrumbList, jsonLd } from "@/lib/seo";
 
@@ -39,7 +38,7 @@ function Section({
 export default function PrivacyPage() {
   return (
     <div className="mx-auto flex w-full max-w-2xl flex-1 flex-col gap-10 px-5 py-12 sm:px-8 sm:py-16">
-      <Script
+      <script
         id="schema-privacy"
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: jsonLd(privacyJsonLd) }}
@@ -60,16 +59,9 @@ export default function PrivacyPage() {
           Privacy{" "}
           <span className="storm-display-italic text-brass-bright">Policy</span>
         </h1>
-        <p
-          className="storm-mono text-[11px] text-muted/60"
-          suppressHydrationWarning
-        >
-          Last updated:{" "}
-          {new Date().toLocaleDateString("en-CA", {
-            year: "numeric",
-            month: "long",
-            day: "numeric",
-          })}
+        {/* Bump when the policy text changes. */}
+        <p className="storm-mono text-[11px] text-muted/60">
+          Last updated: October 5, 2026
         </p>
       </header>
 
@@ -166,10 +158,11 @@ export default function PrivacyPage() {
                 <span className="mt-0.5 shrink-0 text-brass">▸</span>
                 <span>
                   <strong className="text-foreground/85">
-                    Theme preference (localStorage)
+                    Game progress (localStorage)
                   </strong>{" "}
-                  — stores your light/dark/system preference locally so your
-                  chosen theme persists across visits.
+                  — your Survival personal best, whether you&apos;ve played
+                  today&apos;s Daily, and any result waiting to be saved after
+                  you sign in. Stays in your browser until submitted.
                 </span>
               </li>
             </ul>
@@ -241,7 +234,10 @@ export default function PrivacyPage() {
                 >
                   privacy policy
                 </a>
-                .
+                . If you accept analytics in the cookie banner, Vercel Web
+                Analytics and Speed Insights collect anonymous, aggregated
+                page-view and performance data (no cookies, no cross-site
+                tracking). If you reject, they are never loaded.
               </p>
             </li>
           </ul>

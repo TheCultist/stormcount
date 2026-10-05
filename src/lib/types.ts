@@ -27,8 +27,6 @@ export type GuessDirection = "higher" | "lower";
 
 export type GuessResult = "correct" | "wrong";
 
-export type GameStatus = "idle" | "playing" | "gameover";
-
 export type LeaderboardEntry = {
   rank: number;
   userId?: string;
@@ -38,15 +36,9 @@ export type LeaderboardEntry = {
   elapsed_ms: number;
 };
 
-export type DailySeed = {
-  date: string; // ISO yyyy-mm-dd (UTC)
-  card_ids: string[]; // ordered, length 100
-  themed?: string | null; // e.g. "Dragons Day"
-  themedDescription?: string | null; // long-form blurb for themed days
-};
-
 export type SubmitScorePayload = {
   date: string; // ISO yyyy-mm-dd (UTC)
+  /** Display only — the server recomputes the score by replaying `guesses`. */
   score: number;
   elapsed_ms: number;
   // Client-provided sequence of guesses for server-side validation.

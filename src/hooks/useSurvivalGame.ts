@@ -1,42 +1,49 @@
 "use client";
 
 import { useState, useRef, useCallback, useEffect } from "react";
-import type { MtgCard, GuessDirection } from "@/lib/types";
+import type { MtgCard, GuessDirection, GuessResult } from "@/lib/types";
+import { REVEAL_DURATION_MS } from "@/lib/constants";
+import { useLeaveGuard } from "./useLeaveGuard";
 
 export type SurvivalStatus = "idle" | "playing" | "revealed" | "gameover";
-export type GuessResult = "correct" | "wrong";
 
 /** Local display PB — always written, shown even when signed out. */
 const PB_STORAGE_KEY = "stormcount_survival_pb";
 /** Pending submission for anonymous players — cleared once synced to DB. */
 const DEFERRED_KEY = "stormcount_survival_deferred";
 const LOW_WATER_MARK = 3;
-const REVEAL_DURATION_MS = 1000;
+/** Most-recent seen card ids sent as `exclude` (keeps the URL short). */
+const MAX_EXCLUDE = 60;
 
 // ── local-storage helpers ──────────────────────────────────────────────────
 
+// Storage can throw (private mode, blocked site data) — never let it break a run.
+
 function readPB(): number {
-  if (typeof window === "undefined") return 0;
-  return parseInt(localStorage.getItem(PB_STORAGE_KEY) ?? "0", 10) || 0;
+  try {
+    return parseInt(localStorage.getItem(PB_STORAGE_KEY) ?? "0", 10) || 0;
+  } catch { return 0; }
 }
 
 function writePB(score: number): number {
-  const prev = readPB();
-  const next = Math.max(prev, score);
-  localStorage.setItem(PB_STORAGE_KEY, next.toString());
+  const next = Math.max(readPB(), score);
+  try { localStorage.setItem(PB_STORAGE_KEY, next.toString()); } catch { /* ignore */ }
   return next;
 }
 
 function readDeferred(): number | null {
-  if (typeof window === "undefined") return null;
-  const raw = localStorage.getItem(DEFERRED_KEY);
-  if (!raw) return null;
-  const n = parseInt(raw, 10);
-  return Number.isNaN(n) ? null : n;
+  try {
+    const raw = localStorage.getItem(DEFERRED_KEY);
+    if (!raw) return null;
+    const n = parseInt(raw, 10);
+    return Number.isNaN(n) ? null : n;
+  } catch { return null; }
 }
 
+/** Keeps the best pending score — a later, worse anonymous run must not replace it. */
 function writeDeferred(score: number) {
-  try { localStorage.setItem(DEFERRED_KEY, String(score)); } catch { /* ignore */ }
+  const best = Math.max(readDeferred() ?? 0, score);
+  try { localStorage.setItem(DEFERRED_KEY, String(best)); } catch { /* ignore */ }
 }
 
 function clearDeferred() {
@@ -61,9 +68,9 @@ async function submitSurvivalScore(score: number): Promise<{ ok: boolean; best?:
 // ── Scryfall fetch ─────────────────────────────────────────────────────────
 
 async function fetchSurvivalBatch(exclude: string[]): Promise<MtgCard[]> {
-  // Cap exclude list length to avoid huge URLs.
+  // Only the most recent ids — those are the ones a repeat would be noticed for.
   const excludeParam =
-    exclude.length > 0 ? `?exclude=${exclude.slice(0, 60).join(",")}` : "";
+    exclude.length > 0 ? `?exclude=${exclude.slice(-MAX_EXCLUDE).join(",")}` : "";
   const res = await fetch(`/api/cards/survival${excludeParam}`);
   if (!res.ok) throw new Error(`Survival API error: ${res.status}`);
   const data: { cards: MtgCard[] } = await res.json();
@@ -89,7 +96,13 @@ export function useSurvivalGame() {
   // Mutable refs — safe to access inside async callbacks / timeouts.
   const queueRef = useRef<MtgCard[]>([]);
   const seenIdsRef = useRef<Set<string>>(new Set());
-  const isFetchingRef = useRef(false);
+  /** In-flight queue refill, shared by everyone waiting for cards. */
+  const fetchRef = useRef<Promise<void> | null>(null);
+  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  useEffect(() => () => {
+    if (revealTimeoutRef.current !== null) clearTimeout(revealTimeoutRef.current);
+  }, []);
 
   // Load local PB on mount, then try to flush any deferred anonymous score.
   useEffect(() => {
@@ -113,86 +126,39 @@ export function useSurvivalGame() {
   }, []);
 
   // Warn before tab close / refresh / internal navigation while a run is active.
-  useEffect(() => {
-    const isActive = status === "playing" || status === "revealed";
-
-    // ── browser unload (close tab, refresh, external URL) ──────────────────
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-
-    if (isActive) {
-      window.addEventListener("beforeunload", onBeforeUnload);
-    }
-
-    // ── internal Next.js navigation (Link clicks) ───────────────────────────
-    // Intercept in capture phase — runs before Next.js's router onClick.
-    // stopPropagation() prevents the event from reaching the bubble phase,
-    // which is where Next.js attaches its router.push() handler.
-    const onLinkClick = (e: MouseEvent) => {
-      if (!isActive) return;
-
-      const anchor = (e.target as HTMLElement).closest("a");
-      if (!anchor) return;
-
-      const href = anchor.getAttribute("href") ?? "";
-      // Only block same-origin / relative links (internal navigation).
-      if (href.startsWith("http") || href.startsWith("//") || !href) return;
-
-      const confirmed = window.confirm(
-        "Your run is still active. Leave and lose your current streak?",
-      );
-      if (!confirmed) {
-        e.preventDefault();
-        e.stopPropagation();
-      }
-    };
-
-    document.addEventListener("click", onLinkClick, true);
-
-    return () => {
-      window.removeEventListener("beforeunload", onBeforeUnload);
-      document.removeEventListener("click", onLinkClick, true);
-    };
-  }, [status]);
+  useLeaveGuard(
+    status === "playing" || status === "revealed",
+    "Your run is still active. Leave and lose your current streak?",
+  );
 
   // ── internal: fill the queue ─────────────────────────────────────────────
 
-  const fillQueue = useCallback(async () => {
-    if (isFetchingRef.current) return;
-    isFetchingRef.current = true;
-    try {
-      const exclude = Array.from(seenIdsRef.current);
-      const cards = await fetchSurvivalBatch(exclude);
-      const fresh = cards.filter((c) => !seenIdsRef.current.has(c.id));
-      fresh.forEach((c) => seenIdsRef.current.add(c.id));
-      queueRef.current = [...queueRef.current, ...fresh];
-    } catch (err) {
-      console.error("[useSurvivalGame] fillQueue error:", err);
-    } finally {
-      isFetchingRef.current = false;
-    }
+  const fillQueue = useCallback((): Promise<void> => {
+    if (fetchRef.current) return fetchRef.current;
+    const pending = (async () => {
+      try {
+        const exclude = Array.from(seenIdsRef.current);
+        const cards = await fetchSurvivalBatch(exclude);
+        const fresh = cards.filter((c) => !seenIdsRef.current.has(c.id));
+        fresh.forEach((c) => seenIdsRef.current.add(c.id));
+        queueRef.current = [...queueRef.current, ...fresh];
+      } catch (err) {
+        console.error("[useSurvivalGame] fillQueue error:", err);
+      }
+    })().finally(() => {
+      // A restart may have replaced the in-flight refill — don't clobber it.
+      if (fetchRef.current === pending) fetchRef.current = null;
+    });
+    fetchRef.current = pending;
+    return pending;
   }, []);
 
   // ── internal: pop next card from queue ──────────────────────────────────
 
+  /** Next card, refilling (with one retry) when empty; null if none could be loaded. */
   const popQueue = useCallback(async (): Promise<MtgCard | null> => {
-    // If queue is empty, wait for in-flight fetch or trigger one.
-    if (queueRef.current.length === 0) {
-      if (!isFetchingRef.current) {
-        await fillQueue();
-      } else {
-        // Poll until fetch completes.
-        await new Promise<void>((resolve) => {
-          const interval = setInterval(() => {
-            if (!isFetchingRef.current || queueRef.current.length > 0) {
-              clearInterval(interval);
-              resolve();
-            }
-          }, 100);
-        });
-      }
+    for (let attempt = 0; attempt < 2 && queueRef.current.length === 0; attempt++) {
+      await fillQueue();
     }
     const next = queueRef.current[0] ?? null;
     if (next) queueRef.current = queueRef.current.slice(1);
@@ -213,7 +179,7 @@ export function useSurvivalGame() {
     // Reset mutable state.
     queueRef.current = [];
     seenIdsRef.current = new Set();
-    isFetchingRef.current = false;
+    fetchRef.current = null;
 
     try {
       await fillQueue();
@@ -270,7 +236,7 @@ export function useSurvivalGame() {
           // still has the PB for display, and next run will re-attempt.
         });
 
-        setTimeout(() => setStatus("gameover"), REVEAL_DURATION_MS);
+        revealTimeoutRef.current = setTimeout(() => setStatus("gameover"), REVEAL_DURATION_MS);
         return;
       }
 
@@ -279,12 +245,19 @@ export function useSurvivalGame() {
       setStreak(newStreak);
 
       // Background-fetch if queue is running low.
-      if (queueRef.current.length <= LOW_WATER_MARK && !isFetchingRef.current) {
+      if (queueRef.current.length <= LOW_WATER_MARK) {
         fillQueue();
       }
 
-      setTimeout(async () => {
+      revealTimeoutRef.current = setTimeout(async () => {
         const nextCard = await popQueue();
+        if (!nextCard) {
+          // Without this the board sat on a null mystery card forever.
+          setPersonalBest(writePB(newStreak));
+          setError("Couldn't load the next card");
+          setStatus("idle");
+          return;
+        }
         setAnchor(currentMystery);
         setMystery(nextCard);
         setLastResult(null);

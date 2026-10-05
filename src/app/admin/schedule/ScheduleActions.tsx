@@ -10,6 +10,8 @@ type ActionStatus =
 interface Props {
   date: string; // "yyyy-mm-dd"
   hasSeed: boolean;
+  /** Date is today (or earlier): its seed is live and can't be changed. */
+  isLive: boolean;
 }
 
 /**
@@ -18,9 +20,10 @@ interface Props {
  * Hits `POST /api/admin/seed` with `{ date, force }` to (re)generate, and
  * `DELETE /api/admin/seed` with `{ date }` to drop. After each successful
  * mutation we call `router.refresh()` so the parent server component re-runs
- * its DB queries and the row's status flips immediately.
+ * its DB queries and the row's status flips immediately. Live seeds (today)
+ * are locked server-side, so their buttons are hidden here.
  */
-export default function ScheduleActions({ date, hasSeed }: Props) {
+export default function ScheduleActions({ date, hasSeed, isLive }: Props) {
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [pendingAction, setPendingAction] = useState<string | null>(null);
@@ -66,10 +69,20 @@ export default function ScheduleActions({ date, hasSeed }: Props) {
     callSeed("POST", { date, force: false }, "generate");
   const regenerate = () =>
     callSeed("POST", { date, force: true }, "regenerate");
-  const remove = () =>
+  const remove = () => {
+    if (!window.confirm(`Remove the seed for ${date}? A new one will be generated on demand.`)) return;
     callSeed("DELETE", { date }, "remove");
+  };
 
   const busy = pendingAction !== null || isPending;
+
+  if (hasSeed && isLive) {
+    return (
+      <p className="storm-mono text-[10px] uppercase tracking-[0.18em] text-foreground/50">
+        Live — locked
+      </p>
+    );
+  }
 
   return (
     <div className="flex flex-col gap-2">

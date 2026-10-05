@@ -5,8 +5,9 @@
  * The query is passed to the Scryfall search API and used as the bulk-data
  * filter when refreshing the `card_pool` table.
  *
- * Filters mirror DAILY_SCRYFALL_QUERY — both modes exclude X-cost spells
- * (`-mana:{X}`) and split cards (`-is:split`).
+ * It is also the base filter for every other pool: the Daily bulk filter in
+ * `bulkClient.ts` mirrors it, and themed queries are ANDed with it
+ * (`withPoolFilters`) — no X-cost spells (`-mana:{X}`), split cards, lands…
  *
  * Scryfall syntax reference: https://scryfall.com/docs/syntax
  */

@@ -3,8 +3,7 @@
  * date. Used by the `/leaderboard/[date]` route, its metadata, and the sitemap
  * so they cannot disagree about which archive URLs are real.
  */
-
-const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
+import { isValidIsoDate, todayUtc, utcOffsetDate } from "@/lib/dates";
 
 /**
  * How far back the archive is exposed for SEO. Older archives still exist in
@@ -12,23 +11,13 @@ const DATE_RE = /^\d{4}-\d{2}-\d{2}$/;
  */
 export const ARCHIVE_WINDOW_DAYS = 30;
 
-export function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
-}
-
-function utcOffsetDate(offsetDays: number): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + offsetDays);
-  return d.toISOString().slice(0, 10);
-}
-
 /**
  * Returns the normalised date when the slug is a valid archive entry,
  * otherwise `null`. A slug is valid when it is well-formed, strictly in the
  * past (today is served by `/leaderboard`), and within the archive window.
  */
 export function validateArchiveDate(date: string): string | null {
-  if (!DATE_RE.test(date)) return null;
+  if (!isValidIsoDate(date)) return null;
 
   const today = todayUtc();
   if (date >= today) return null;

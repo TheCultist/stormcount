@@ -1,16 +1,17 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import Image from "next/image";
+import { useCallback, useEffect, useRef, useState } from "react";
 import Link from "next/link";
-import CardDisplay from "@/components/game/CardDisplay";
+import CardBuyRow from "@/components/affiliate/CardBuyRow";
 import ScoreDisplay from "@/components/game/ScoreDisplay";
 import ShareScore from "@/components/game/ShareScore";
+import VersusArena from "@/components/game/VersusArena";
+import { RulesPanel, ThemePanel, ThemeTitle, TieRulePill, type RuleEntry } from "@/components/game/GamePanels";
 import { useDailyGame } from "@/hooks/useDailyGame";
+import { useGuessHotkeys } from "@/hooks/useGuessHotkeys";
 import { ROUTES } from "@/lib/constants";
-import { buildCardTraderLink, buildTcgPlayerLink } from "@/lib/affiliate";
 import type { AffiliateConfig } from "@/lib/affiliate";
-import type { GuessDirection, MtgCard } from "@/lib/types";
+import type { MtgCard } from "@/lib/types";
 
 // ── helpers ────────────────────────────────────────────────────────────────
 
@@ -44,190 +45,58 @@ const RULES = [
     heading: "50 pairs — no elimination",
     body: "Unlike Survival, wrong answers don't end your run. You play all 50 pairs and your score is how many you got right.",
   },
-] as const;
+] as const satisfies readonly RuleEntry[];
 
-const SHORTCUTS = [
-  { kbd: "↑ / W", label: "Higher or Equal" },
-  { kbd: "↓ / S", label: "Lower" },
-] as const;
+/** Buy links used when no affiliate config is supplied (matches the server default). */
+const FALLBACK_BUY_LINKS = { cardTraderShareCode: "thecultist", tcgPlayerPartnerLink: null };
 
-// ── ActionButton ───────────────────────────────────────────────────────────
-
-const ACTION_CONFIG: Record<
-  GuessDirection,
-  { glyph: string; labelFull: string; labelShort: string; kbd: string }
-> = {
-  higher: { glyph: "▲", labelFull: "Higher or Equal", labelShort: "Higher ≥", kbd: "↑" },
-  lower:  { glyph: "▼", labelFull: "Lower",           labelShort: "Lower",    kbd: "↓" },
-};
-
-function ActionButton({
-  direction,
-  onClick,
-  disabled,
-}: {
-  direction: GuessDirection;
-  onClick: () => void;
-  disabled?: boolean;
-}) {
-  const { glyph, labelFull, labelShort, kbd } = ACTION_CONFIG[direction];
-  return (
-    <button
-      type="button"
-      onClick={onClick}
-      disabled={disabled}
-      aria-label={labelFull}
-      className="codex rim-brass group relative isolate flex flex-1 items-center justify-center gap-3 overflow-hidden rounded-md px-4 py-4 transition-all duration-300 ease-out hover:-translate-y-0.5 disabled:pointer-events-none disabled:opacity-40 lg:w-48 lg:flex-none lg:justify-between lg:px-5 lg:py-3"
-    >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute inset-0 -z-10 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
-        style={{ background: "radial-gradient(ellipse at center, rgba(232,193,129,0.16), transparent 70%)" }}
-      />
-      <span
-        aria-hidden
-        className="storm-display flex h-8 w-8 shrink-0 items-center justify-center rounded-sm border border-brass/40 bg-paper-3/60 text-sm text-brass-bright transition-colors duration-300 group-hover:border-brass-bright group-hover:text-brass-bright"
-      >
-        {glyph}
-      </span>
-      <span
-        className="storm-display text-[13px] font-semibold uppercase tracking-[0.14em] text-foreground transition-colors duration-300 group-hover:text-brass-bright lg:flex-1"
-        style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
-      >
-        <span className="lg:hidden">{labelShort}</span>
-        <span className="hidden lg:inline">{labelFull}</span>
-      </span>
-      <kbd
-        aria-hidden
-        className="storm-mono hidden items-center justify-center rounded-sm border border-rule/60 bg-background-deep/40 px-1.5 py-0.5 text-[10px] font-medium text-muted/80 lg:inline-flex"
-      >
-        {kbd}
-      </kbd>
-    </button>
-  );
-}
-
-// ── RulesPanel (shared by pregame + gate) ──────────────────────────────────
-
-function RulesPanel() {
-  return (
-    <article className="codex rim-brass anim-rise-in w-full rounded-md">
-      <header className="flex items-center gap-3 px-5 pt-5 pb-4">
-        <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass-bright" />
-        <p className="eyebrow text-[9px]">How to Play</p>
-      </header>
-      <span aria-hidden className="rule-brass mx-5 block h-px" />
-      <ol className="flex flex-col gap-0 px-5 py-4">
-        {RULES.map(({ num, heading, body }) => (
-          <li
-            key={num}
-            className="flex gap-4 py-3 [&:not(:last-child)]:border-b [&:not(:last-child)]:border-rule/30"
-          >
-            <span
-              className="storm-display mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded-sm border border-brass/40 bg-paper-3/60 text-[10px] font-bold text-brass-bright"
-              aria-hidden
-            >
-              {num}
-            </span>
-            <div className="flex flex-col gap-0.5">
-              <span
-                className="storm-display text-[13px] font-semibold leading-snug text-foreground"
-                style={{ fontVariationSettings: '"opsz" 96, "SOFT" 30' }}
-              >
-                {heading}
-              </span>
-              <span className="storm-mono text-[11px] leading-relaxed text-foreground-muted">
-                {body}
-              </span>
-            </div>
-          </li>
-        ))}
-      </ol>
-      <span aria-hidden className="rule-brass mx-5 block h-px" />
-      <footer className="flex items-center justify-between gap-4 px-5 py-4">
-        <p className="storm-mono text-[9px] uppercase tracking-[0.22em] text-foreground/55">Keyboard</p>
-        <div className="flex items-center gap-4">
-          {SHORTCUTS.map(({ kbd, label }) => (
-            <span key={kbd} className="flex items-center gap-1.5">
-              <kbd className="storm-mono inline-flex items-center justify-center rounded-sm border border-rule/60 bg-background-deep/50 px-1.5 py-0.5 text-[10px] font-medium text-muted/80">
-                {kbd}
-              </kbd>
-              <span className="storm-mono text-[10px] text-foreground/70">{label}</span>
-            </span>
-          ))}
-        </div>
-      </footer>
-    </article>
-  );
-}
+type BuyLinkConfig = Pick<AffiliateConfig, "cardTraderShareCode" | "tcgPlayerPartnerLink">;
 
 // ── DailyCardsPanel ────────────────────────────────────────────────────────
 
-/** Buy-button row — reused in the grid item and the zoom modal. */
-function CardBuyButtons({
-  cardName,
-  ctUrl,
-  tcgUrl,
-}: {
-  cardName: string;
-  ctUrl: string;
-  tcgUrl: string | null;
-}) {
-  return (
-    <div className="flex gap-1.5">
-      <a
-        href={ctUrl}
-        target="_blank"
-        rel="noopener noreferrer sponsored"
-        aria-label={`Buy ${cardName} on CardTrader`}
-        className="group flex flex-1 items-center justify-center rounded-sm border border-rule/50 bg-paper-3/70 py-2.5 transition-colors hover:border-brass/50 hover:bg-paper-2"
-      >
-        <Image
-          src="/brand/cardtrader.svg"
-          alt="CardTrader"
-          width={96}
-          height={16}
-          className="h-3.5 w-auto opacity-75 transition-opacity group-hover:opacity-100"
-          unoptimized
-        />
-      </a>
-      {tcgUrl && (
-        <a
-          href={tcgUrl}
-          target="_blank"
-          rel="noopener noreferrer sponsored"
-          aria-label={`Buy ${cardName} on TCGPlayer`}
-          className="group flex flex-1 items-center justify-center rounded-sm border border-rule/50 bg-paper-3/70 py-2.5 transition-colors hover:border-brass/50 hover:bg-paper-2"
-        >
-          <Image
-            src="/brand/tcgplayer.svg"
-            alt="TCGPlayer"
-            width={96}
-            height={16}
-            className="h-3.5 w-auto opacity-75 transition-opacity group-hover:opacity-100"
-            unoptimized
-          />
-        </a>
-      )}
-    </div>
-  );
-}
+const FOCUSABLE = 'a[href], button:not([disabled]), [tabindex]:not([tabindex="-1"])';
 
 /** Zoom modal — shown when a card is clicked in the grid. */
 function CardZoomModal({
   card,
-  ctUrl,
-  tcgUrl,
+  buyLinks,
   onClose,
 }: {
   card: MtgCard;
-  ctUrl: string;
-  tcgUrl: string | null;
+  buyLinks: BuyLinkConfig;
   onClose: () => void;
 }) {
-  // Close on Escape
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const closeRef = useRef<HTMLButtonElement>(null);
+
+  // Move focus into the dialog when it opens.
   useEffect(() => {
-    const handler = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    closeRef.current?.focus();
+  }, []);
+
+  // Escape closes; Tab / Shift+Tab cycle within the dialog.
+  useEffect(() => {
+    const handler = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        onClose();
+        return;
+      }
+      const dialog = dialogRef.current;
+      if (e.key !== "Tab" || !dialog) return;
+      const items = dialog.querySelectorAll<HTMLElement>(FOCUSABLE);
+      if (items.length === 0) return;
+      const first = items[0];
+      const last = items[items.length - 1];
+      const active = document.activeElement;
+      const outside = !dialog.contains(active);
+      if (e.shiftKey && (active === first || outside)) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (active === last || outside)) {
+        e.preventDefault();
+        first.focus();
+      }
+    };
     window.addEventListener("keydown", handler);
     return () => window.removeEventListener("keydown", handler);
   }, [onClose]);
@@ -241,11 +110,16 @@ function CardZoomModal({
     >
       {/* Modal card — stop propagation so clicks inside don't close */}
       <div
+        ref={dialogRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label={card.name}
         className="codex rim-brass relative flex max-h-[90dvh] w-full max-w-sm flex-col gap-4 overflow-y-auto rounded-md p-5"
         onClick={(e) => e.stopPropagation()}
       >
         {/* Close button */}
         <button
+          ref={closeRef}
           type="button"
           onClick={onClose}
           aria-label="Close"
@@ -275,7 +149,7 @@ function CardZoomModal({
         </p>
 
         {/* Buy buttons */}
-        <CardBuyButtons cardName={card.name} ctUrl={ctUrl} tcgUrl={tcgUrl} />
+        <CardBuyRow cardName={card.name} setName={card.set_name} affiliateConfig={buyLinks} variant="compact" />
       </div>
     </div>
   );
@@ -293,19 +167,26 @@ function DailyCardItem({
   affiliateConfig: AffiliateConfig | null;
 }) {
   const [zoomed, setZoomed] = useState(false);
-  const shareCode = affiliateConfig?.cardTraderShareCode ?? "thecultist";
-  const tcgPartnerLink = affiliateConfig?.tcgPlayerPartnerLink ?? null;
-  const ctUrl = buildCardTraderLink(card.name, shareCode, card.set_name);
-  const tcgUrl = buildTcgPlayerLink(card.name, tcgPartnerLink);
+  const triggerRef = useRef<HTMLButtonElement>(null);
+  const buyLinks: BuyLinkConfig = affiliateConfig ?? FALLBACK_BUY_LINKS;
+
+  // Return focus to the thumbnail that opened the modal.
+  const closeZoom = useCallback(() => {
+    setZoomed(false);
+    triggerRef.current?.focus();
+  }, []);
 
   return (
     <>
       <div className="flex flex-col gap-1.5">
         {/* Clickable card image */}
         <button
+          ref={triggerRef}
           type="button"
           onClick={() => setZoomed(true)}
           aria-label={`Zoom ${card.name}`}
+          aria-haspopup="dialog"
+          aria-expanded={zoomed}
           className="group block overflow-hidden rounded-[4px] focus-visible:outline focus-visible:outline-2 focus-visible:outline-brass"
         >
           {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -325,17 +206,10 @@ function DailyCardItem({
         </p>
 
         {/* Buy buttons */}
-        <CardBuyButtons cardName={card.name} ctUrl={ctUrl} tcgUrl={tcgUrl} />
+        <CardBuyRow cardName={card.name} setName={card.set_name} affiliateConfig={buyLinks} variant="compact" />
       </div>
 
-      {zoomed && (
-        <CardZoomModal
-          card={card}
-          ctUrl={ctUrl}
-          tcgUrl={tcgUrl}
-          onClose={() => setZoomed(false)}
-        />
-      )}
+      {zoomed && <CardZoomModal card={card} buyLinks={buyLinks} onClose={closeZoom} />}
     </>
   );
 }
@@ -362,6 +236,7 @@ function DailyCardsPanel({
       <button
         type="button"
         onClick={onToggle}
+        aria-expanded={open}
         className="storm-mono flex items-center gap-2 text-[11px] uppercase tracking-[0.18em] text-foreground/50 transition-colors hover:text-brass-bright"
       >
         <span
@@ -419,17 +294,7 @@ export default function DailyGame({
   const isRevealed = status === "revealed";
 
   // Keyboard shortcuts — only active while playing.
-  useEffect(() => {
-    if (status !== "playing" && status !== "idle") return;
-    const handler = (e: KeyboardEvent) => {
-      if (e.repeat) return;
-      const k = e.key.toLowerCase();
-      if (k === "arrowup" || k === "w") { e.preventDefault(); guess("higher"); }
-      else if (k === "arrowdown" || k === "s") { e.preventDefault(); guess("lower"); }
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [status, guess]);
+  useGuessHotkeys(status === "playing" || status === "idle", guess);
 
   // ── loading ───────────────────────────────────────────────────────────────
   if (status === "loading") {
@@ -469,31 +334,13 @@ export default function DailyGame({
             <span className="text-foreground/40">·</span>
             <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{date}</span>
           </p>
-          {themed && (
-            <h2
-              className="text-2xl font-bold uppercase leading-tight tracking-[0.14em] text-brass-bright sm:text-3xl"
-              style={{ fontFamily: "var(--font-mono)" }}
-            >
-              {themed}
-            </h2>
-          )}
+          {themed && <ThemeTitle>{themed}</ThemeTitle>}
         </div>
 
         {/* Theme info panel — mirrors the How-to-Play codex panel */}
-        {themed && themedDescription && (
-          <article className="codex rim-brass anim-rise-in w-full rounded-md">
-            <header className="flex items-center gap-3 px-5 pt-5 pb-4">
-              <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass-bright" />
-              <p className="eyebrow text-[9px]">About Today&apos;s Theme</p>
-            </header>
-            <span aria-hidden className="rule-brass mx-5 block h-px" />
-            <p className="storm-display-italic px-5 py-4 text-[15px] leading-relaxed text-foreground/85">
-              {themedDescription}
-            </p>
-          </article>
-        )}
+        {themed && themedDescription && <ThemePanel description={themedDescription} />}
 
-        <RulesPanel />
+        <RulesPanel rules={RULES} />
 
         <div className="flex flex-col items-center gap-3">
           <button
@@ -764,10 +611,7 @@ export default function DailyGame({
 
       {/* Tie-rule hint + contextual status notice (same flex slot, no extra gap) */}
       <div className="flex flex-col gap-1.5 self-start">
-        <p className="storm-mono inline-flex w-fit items-center gap-2.5 border border-rule/40 bg-paper/60 px-3 py-1.5 text-[10px] uppercase tracking-[0.22em] text-foreground/80">
-          <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright" />
-          Tie rule · equal mv counts as Higher or Equal
-        </p>
+        <TieRulePill />
         {status === "idle" && practiceMode && (
           <p className="storm-mono text-[10px] uppercase tracking-[0.18em] text-foreground/50 anim-fade-in">
             Practice mode · score won&apos;t be recorded
@@ -787,39 +631,13 @@ export default function DailyGame({
       </div>
 
       {/* Versus arena — mobile: cards side by side, buttons beneath; lg: row */}
-      <section className="grid grid-cols-2 items-start justify-items-center gap-3 lg:flex lg:items-center lg:justify-center lg:gap-8">
-        <CardDisplay card={anchor} mode="anchor" />
-
-        <div className="order-2 col-span-2 flex w-full flex-row gap-3 lg:order-none lg:w-auto lg:flex-col lg:items-center lg:gap-2">
-          <ActionButton direction="higher" onClick={() => guess("higher")} disabled={isRevealed} />
-
-          <div className="hidden lg:flex lg:flex-col lg:items-center lg:gap-1.5">
-            <span aria-hidden className="h-8 w-px bg-gradient-to-b from-transparent via-brass/40 to-transparent" />
-            <span
-              className="storm-display relative flex h-12 w-12 items-center justify-center rounded-full border border-brass/50 bg-background-deep/70 text-[11px] font-extrabold uppercase tracking-[0.3em] text-brass-bright"
-              style={{ fontVariationSettings: '"opsz" 96, "WONK" 1' }}
-            >
-              <span
-                aria-hidden
-                className="absolute inset-[-4px] rounded-full opacity-60 blur-md"
-                style={{ background: "radial-gradient(circle, rgba(232,193,129,0.4), transparent 70%)" }}
-              />
-              <span className="relative">vs</span>
-            </span>
-            <span aria-hidden className="h-8 w-px bg-gradient-to-b from-transparent via-moonsilver/40 to-transparent" />
-          </div>
-
-          <ActionButton direction="lower" onClick={() => guess("lower")} disabled={isRevealed} />
-        </div>
-
-        <CardDisplay
-          card={mystery}
-          mode={isRevealed ? "anchor" : "mystery"}
-          result={isRevealed ? lastResult : null}
-        />
-      </section>
-
-
+      <VersusArena
+        anchor={anchor}
+        mystery={mystery}
+        isRevealed={isRevealed}
+        lastResult={lastResult}
+        onGuess={guess}
+      />
     </div>
   );
 }

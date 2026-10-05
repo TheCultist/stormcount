@@ -8,11 +8,11 @@ const nextConfig: NextConfig = {
       { protocol: "https", hostname: "img.scryfall.com" },
       { protocol: "https", hostname: "svgs.scryfall.io" },
     ],
+    // Card art is served straight from Scryfall's CDN — running tens of
+    // thousands of distinct card images through Vercel's optimizer would burn
+    // the quota. Static assets in /public are pre-sized instead (the nav uses
+    // logo-nav.png, not the 512px logo.png).
     unoptimized: true,
-    formats: ["image/webp"],
-    deviceSizes: [320, 640, 960, 1280],
-    imageSizes: [16, 24, 32, 48, 64, 96, 120, 180],
-    minimumCacheTTL: 2678400,
   },
 };
 

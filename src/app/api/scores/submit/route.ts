@@ -1,9 +1,31 @@
 import { NextRequest, NextResponse } from "next/server";
-import { auth, currentUser } from "@clerk/nextjs/server";
-import { eq, and, desc, count, sql } from "drizzle-orm";
+import { auth } from "@clerk/nextjs/server";
+import { eq, and, count, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
-import { users, dailySeeds, dailyScores } from "@/lib/db/schema";
-import type { SubmitScorePayload, SubmitScoreResponse } from "@/lib/types";
+import { dailySeeds, dailyScores } from "@/lib/db/schema";
+import { upsertUserFromClerk } from "@/lib/db/users";
+import { isValidIsoDate, todayUtc, utcOffsetDate } from "@/lib/dates";
+import { REVEAL_DURATION_MS } from "@/lib/constants";
+import type { SubmitScoreResponse } from "@/lib/types";
+
+/**
+ * A run that starts before 00:00 UTC may finish after it. Yesterday's date is
+ * still accepted for this long into the new day.
+ */
+const MIDNIGHT_GRACE_MS = 60 * 60 * 1000;
+
+/** Longest run we accept (a day); anything beyond is junk input. */
+const MAX_ELAPSED_MS = 24 * 60 * 60 * 1000;
+
+function isSubmittableDate(date: string): boolean {
+  if (date === todayUtc()) return true;
+  const msIntoDay = Date.now() % (24 * 60 * 60 * 1000);
+  return date === utcOffsetDate(-1) && msIntoDay < MIDNIGHT_GRACE_MS;
+}
+
+function fail(error: string, status: number) {
+  return NextResponse.json<SubmitScoreResponse>({ ok: false, error }, { status });
+}
 
 /**
  * POST /api/scores/submit
@@ -14,106 +36,94 @@ import type { SubmitScorePayload, SubmitScoreResponse } from "@/lib/types";
  * Response: SubmitScoreResponse — { ok: true, rank } or { ok: false, error }
  *
  * Server-side validation:
- *   - Verifies the seed for the given date exists in the DB.
- *   - Replays the guess sequence against the stored card order.
+ *   - Only today's challenge is accepted (plus yesterday's for a short grace
+ *     window after midnight UTC).
+ *   - Replays the guess sequence against the stored card order; the client's
+ *     score is ignored.
+ *   - `elapsed_ms` is floored at the minimum the client can physically
+ *     produce (every guess holds the board for REVEAL_DURATION_MS), so a
+ *     forged tiny time can't win the tie-break.
  *   - Enforces one submission per user per day (duplicate → 409).
  */
 export async function POST(req: NextRequest): Promise<NextResponse<SubmitScoreResponse>> {
   const { userId } = await auth();
-  if (!userId) {
-    return NextResponse.json({ ok: false, error: "Unauthorized" }, { status: 401 });
-  }
+  if (!userId) return fail("Unauthorized", 401);
 
-  let body: SubmitScorePayload;
+  let body: Record<string, unknown>;
   try {
-    body = (await req.json()) as SubmitScorePayload;
+    body = await req.json();
   } catch {
-    return NextResponse.json({ ok: false, error: "Invalid JSON" }, { status: 400 });
+    return fail("Invalid JSON", 400);
   }
+  const { date, elapsed_ms, guesses } = body ?? {};
 
-  const { date, score: _clientScore, elapsed_ms, guesses } = body;
-
-  if (!date || typeof elapsed_ms !== "number" || !Array.isArray(guesses)) {
-    return NextResponse.json({ ok: false, error: "Missing required fields" }, { status: 400 });
+  if (
+    !isValidIsoDate(date) ||
+    typeof elapsed_ms !== "number" ||
+    !Number.isFinite(elapsed_ms) ||
+    elapsed_ms < 0 ||
+    elapsed_ms > MAX_ELAPSED_MS ||
+    !Array.isArray(guesses) ||
+    guesses.length === 0 ||
+    !guesses.every((g) => g === "higher" || g === "lower")
+  ) {
+    return fail("Invalid submission", 400);
+  }
+  if (!isSubmittableDate(date)) {
+    return fail("Only today's challenge can be submitted", 400);
   }
 
   try {
-    // ── Resolve today's seed ──────────────────────────────────────────────
     const seed = await db.query.dailySeeds.findFirst({
       where: eq(dailySeeds.date, date),
+      columns: { cards: true },
     });
-    if (!seed) {
-      return NextResponse.json({ ok: false, error: "No seed for this date" }, { status: 404 });
+    if (!seed) return fail("No seed for this date", 404);
+
+    const cards = seed.cards;
+    if (guesses.length > cards.length - 1) {
+      return fail("Invalid submission", 400);
     }
 
     // ── Server-side replay: recount correct guesses ───────────────────────
-    const cards = seed.cards;
+    // Ties count as "higher" — must match the client's rule.
     let verifiedScore = 0;
-    for (let i = 0; i < guesses.length && i < cards.length - 1; i++) {
+    guesses.forEach((g, i) => {
       const anchor = cards[i];
       const mystery = cards[i + 1];
-      const correct =
-        guesses[i] === "higher"
-          ? mystery.cmc >= anchor.cmc
-          : mystery.cmc < anchor.cmc;
+      const correct = g === "higher" ? mystery.cmc >= anchor.cmc : mystery.cmc < anchor.cmc;
       if (correct) verifiedScore++;
-    }
+    });
 
-    // ── Upsert user record from Clerk ─────────────────────────────────────
-    // Must happen before score insert to satisfy the FK constraint.
-    const clerkUser = await currentUser();
-    await db
-      .insert(users)
-      .values({
-        id: userId,
-        username: clerkUser?.username ?? clerkUser?.firstName ?? "Planeswalker",
-        imageUrl: clerkUser?.imageUrl ?? null,
-      })
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          username: clerkUser?.username ?? clerkUser?.firstName ?? "Planeswalker",
-          imageUrl: clerkUser?.imageUrl ?? null,
-        },
-      });
+    const timeMs = Math.max(
+      Math.round(elapsed_ms),
+      guesses.length * REVEAL_DURATION_MS,
+    );
+
+    await upsertUserFromClerk(userId);
 
     // ── Insert score (unique constraint prevents duplicates) ──────────────
-    const scoreId = `${userId}-${date}`;
-    try {
-      await db.insert(dailyScores).values({
-        id: scoreId,
-        userId,
-        date,
-        score: verifiedScore,
-        timeMs: elapsed_ms,
-      });
-    } catch (insertErr) {
-      const msg = insertErr instanceof Error ? insertErr.message : "";
-      if (msg.includes("unique") || msg.includes("duplicate")) {
-        return NextResponse.json({ ok: false, error: "Already submitted for today" }, { status: 409 });
-      }
-      throw insertErr;
-    }
+    const [inserted] = await db
+      .insert(dailyScores)
+      .values({ id: `${userId}-${date}`, userId, date, score: verifiedScore, timeMs })
+      .onConflictDoNothing()
+      .returning({ id: dailyScores.id });
+    if (!inserted) return fail("Already submitted for today", 409);
 
     // ── Compute rank: position by (score DESC, time_ms ASC) ──────────────
     const [{ betterCount }] = await db
-      .select({
-        betterCount: count(),
-      })
+      .select({ betterCount: count() })
       .from(dailyScores)
       .where(
         and(
           eq(dailyScores.date, date),
-          sql`(${dailyScores.score} > ${verifiedScore} OR (${dailyScores.score} = ${verifiedScore} AND ${dailyScores.timeMs} < ${elapsed_ms}))`,
+          sql`(${dailyScores.score} > ${verifiedScore} OR (${dailyScores.score} = ${verifiedScore} AND ${dailyScores.timeMs} < ${timeMs}))`,
         ),
       );
 
-    const rank = Number(betterCount) + 1;
-
-    return NextResponse.json({ ok: true, rank });
+    return NextResponse.json({ ok: true, rank: Number(betterCount) + 1 });
   } catch (err) {
     console.error("[scores/submit] error:", err);
-    const msg = err instanceof Error ? err.message : "Unknown error";
-    return NextResponse.json({ ok: false, error: msg }, { status: 500 });
+    return fail("Couldn't save your score", 500);
   }
 }

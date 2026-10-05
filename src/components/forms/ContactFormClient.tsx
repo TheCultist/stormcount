@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useRef } from "react";
+import { CONTACT_LIMITS, HONEYPOT_FIELD } from "@/lib/contactLimits";
 
 type Status = "idle" | "submitting" | "success" | "error";
 
@@ -90,6 +91,7 @@ export default function ContactFormClient({
           type="text"
           name="name"
           required
+          maxLength={CONTACT_LIMITS.name}
           placeholder="Your name"
           className={fieldClass}
           disabled={status === "submitting"}
@@ -102,11 +104,22 @@ export default function ContactFormClient({
           type="email"
           name="email"
           required
+          maxLength={CONTACT_LIMITS.email}
           placeholder="you@domain.com"
           className={fieldClass}
           disabled={status === "submitting"}
         />
       </label>
+
+      {/* Honeypot: invisible to people, tempting to form-filling bots. */}
+      <input
+        type="text"
+        name={HONEYPOT_FIELD}
+        tabIndex={-1}
+        autoComplete="off"
+        aria-hidden
+        className="absolute -left-[9999px] h-px w-px opacity-0"
+      />
 
       {extraFields}
 
@@ -116,6 +129,7 @@ export default function ContactFormClient({
           name="message"
           rows={5}
           required
+          maxLength={CONTACT_LIMITS.message}
           placeholder={messagePlaceholder}
           className={`${fieldClass} resize-y leading-relaxed`}
           disabled={status === "submitting"}

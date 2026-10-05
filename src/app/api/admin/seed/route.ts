@@ -3,21 +3,25 @@ import { eq } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { dailySeeds } from "@/lib/db/schema";
-import {
-  generateDailyCards,
-  generateThemedCards,
-} from "@/lib/scryfall/seedGenerator";
 import { isAdmin } from "@/lib/auth/admin";
-import { findThemedDayForDate } from "@/lib/themedDays";
+import { isValidIsoDate, todayUtc, utcOffsetDate } from "@/lib/dates";
+import { getOrCreateDailySeed, regenerateDailySeed } from "@/lib/dailySeed";
 
 // Long-running on themed days (multiple sequential Scryfall calls).
 export const maxDuration = 60;
 
-/** Returns tomorrow's date in UTC as "yyyy-mm-dd". */
-function tomorrow(): string {
-  const d = new Date();
-  d.setUTCDate(d.getUTCDate() + 1);
-  return d.toISOString().slice(0, 10);
+const LOCKED_MESSAGE =
+  "Seeds for today or earlier are locked — players have already seen those cards and scores reference them";
+
+async function requireAdmin(): Promise<NextResponse | null> {
+  const { userId } = await auth();
+  if (!userId) {
+    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+  }
+  if (!(await isAdmin(userId))) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
+  return null;
 }
 
 /**
@@ -33,7 +37,7 @@ function tomorrow(): string {
  * Request body (all optional):
  *   {
  *     date?:  string   // ISO "yyyy-mm-dd", defaults to tomorrow (UTC)
- *     force?: boolean  // if true, overwrites an existing seed for that date
+ *     force?: boolean  // if true, overwrites an existing seed (future dates only)
  *   }
  *
  * Auth: Clerk-authenticated user whose `users.is_admin` is true.
@@ -41,21 +45,15 @@ function tomorrow(): string {
  * Responses:
  *   200 — seed already exists and force was false (no-op)
  *   201 — seed created or regenerated
- *   400 — invalid date format
+ *   400 — invalid date
  *   401 — not authenticated
  *   403 — authenticated but not an admin
+ *   409 — force-regenerating a seed for today or earlier
  *   502 — Scryfall or DB error
  */
 export async function POST(req: Request) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!(await isAdmin(userId))) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   let body: { date?: unknown; force?: unknown } = {};
   try {
@@ -65,12 +63,12 @@ export async function POST(req: Request) {
   }
 
   const targetDate =
-    typeof body.date === "string" && body.date ? body.date : tomorrow();
+    typeof body.date === "string" && body.date ? body.date : utcOffsetDate(1);
   const force = body.force === true;
 
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(targetDate)) {
+  if (!isValidIsoDate(targetDate)) {
     return NextResponse.json(
-      { error: 'Invalid date format — expected "yyyy-mm-dd"' },
+      { error: 'Invalid date — expected a real "yyyy-mm-dd" date' },
       { status: 400 },
     );
   }
@@ -86,43 +84,27 @@ export async function POST(req: Request) {
           message:
             "Seed already exists for this date (pass force:true to regenerate)",
           date: targetDate,
-          cardCount: (existing.cards as unknown[]).length,
+          cardCount: existing.cards.length,
           themed: existing.themed ?? null,
         },
         { status: 200 },
       );
     }
 
-    // Themed day? Use the themed query path, otherwise the regular bulk pool.
-    const theme = await findThemedDayForDate(targetDate);
-    const cards = theme
-      ? await generateThemedCards(theme.scryfallQuery)
-      : await generateDailyCards();
-
-    const themedLabel = theme?.themeName ?? null;
-    const themedDescription = theme?.themeDescription ?? null;
-
-    if (existing) {
-      await db
-        .update(dailySeeds)
-        .set({ cards, themed: themedLabel, themedDescription })
-        .where(eq(dailySeeds.date, targetDate));
-    } else {
-      await db.insert(dailySeeds).values({
-        id: targetDate,
-        date: targetDate,
-        cards,
-        themed: themedLabel,
-        themedDescription,
-      });
+    if (existing && targetDate <= todayUtc()) {
+      return NextResponse.json({ error: LOCKED_MESSAGE }, { status: 409 });
     }
+
+    const seed = existing
+      ? await regenerateDailySeed(targetDate)
+      : await getOrCreateDailySeed(targetDate);
 
     return NextResponse.json(
       {
         message: existing ? "Seed regenerated" : "Seed generated",
         date: targetDate,
-        cardCount: cards.length,
-        themed: themedLabel,
+        cardCount: seed.cards.length,
+        themed: seed.themed ?? null,
       },
       { status: 201 },
     );
@@ -140,23 +122,17 @@ export async function POST(req: Request) {
  * undo an accidental Generate-Now click before the day arrives.
  *
  * Body:
- *   { date: string }   // ISO "yyyy-mm-dd"
+ *   { date: string }   // ISO "yyyy-mm-dd", must be in the future
  *
  * Responses:
  *   200 — seed removed (or no-op if it never existed)
  *   400 — invalid date
  *   401/403 — auth
+ *   409 — date is today or earlier
  */
 export async function DELETE(req: Request) {
-  const { userId } = await auth();
-
-  if (!userId) {
-    return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-  }
-
-  if (!(await isAdmin(userId))) {
-    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
-  }
+  const denied = await requireAdmin();
+  if (denied) return denied;
 
   let body: { date?: unknown };
   try {
@@ -165,12 +141,15 @@ export async function DELETE(req: Request) {
     return NextResponse.json({ error: "Invalid JSON body" }, { status: 400 });
   }
 
-  const date = typeof body.date === "string" ? body.date : "";
-  if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+  const date = body.date;
+  if (!isValidIsoDate(date)) {
     return NextResponse.json(
       { error: 'date is required, format "yyyy-mm-dd"' },
       { status: 400 },
     );
+  }
+  if (date <= todayUtc()) {
+    return NextResponse.json({ error: LOCKED_MESSAGE }, { status: 409 });
   }
 
   try {

@@ -101,6 +101,7 @@ export default async function AdminSchedulePage() {
   // Today at 00:00 UTC — same anchor used by /api/cards/daily.
   const today = new Date();
   today.setUTCHours(0, 0, 0, 0);
+  const todayIso = today.toISOString().slice(0, 10);
 
   const rows = await db.select().from(themedDays);
   const occurrences = computeUpcomingOccurrences(rows, today);
@@ -190,7 +191,11 @@ export default async function AdminSchedulePage() {
                       )}
                     </td>
                     <td className="px-4 py-4">
-                      <ScheduleActions date={date} hasSeed={hasSeed} />
+                      <ScheduleActions
+                        date={date}
+                        hasSeed={hasSeed}
+                        isLive={date <= todayIso}
+                      />
                     </td>
                   </tr>
                 );

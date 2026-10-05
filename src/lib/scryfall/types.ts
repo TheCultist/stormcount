@@ -84,10 +84,3 @@ export interface ScryfallSearchResponse {
   has_more: boolean;
   data: ScryfallCard[];
 }
-
-export interface ScryfallError {
-  object: "error";
-  code: string;
-  status: number;
-  details: string;
-}

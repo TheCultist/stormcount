@@ -32,8 +32,8 @@ export default function CavernHoldBanner({ href, copy }: Props) {
         <Image
           src="/brand/cavernhold_banner.png"
           alt={`CavernHold — ${copy}`}
-          width={2064}
-          height={512}
+          width={1792}
+          height={392}
           sizes="(max-width: 640px) 100vw, 56rem"
           className="block h-auto w-full transition-transform duration-300 group-hover:scale-[1.015]"
         />

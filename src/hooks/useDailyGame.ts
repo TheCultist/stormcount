@@ -2,6 +2,9 @@
 
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { MtgCard, GuessDirection, GuessResult, SubmitScorePayload } from "@/lib/types";
+import { REVEAL_DURATION_MS } from "@/lib/constants";
+import { todayUtc } from "@/lib/dates";
+import { useLeaveGuard } from "./useLeaveGuard";
 
 /**
  * pregame — cards loaded, first play of the day → show rules screen
@@ -19,12 +22,9 @@ export type DailyStatus =
   | "done"
   | "error";
 
-const REVEAL_DURATION_MS = 1000;
 const PLAYED_KEY = "stormcount_daily_played";
-
-function todayUtc(): string {
-  return new Date().toISOString().slice(0, 10);
-}
+const LEAVE_MESSAGE =
+  "You're mid-run! If you leave now, your current score will be recorded as your daily result. Leave anyway?";
 
 function markPlayed(date: string) {
   try { localStorage.setItem(PLAYED_KEY, date); } catch { /* ignore */ }
@@ -113,6 +113,9 @@ export function useDailyGame(): DailyGameState {
 
   const startTimeRef = useRef<number | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+  const revealTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  /** The ranked result has been sent (end of run or leaving mid-run). */
+  const submittedRef = useRef(false);
   const guessesRef = useRef<GuessDirection[]>([]);
   const scoreRef = useRef(0);
   const dateRef = useRef(date);
@@ -233,121 +236,43 @@ export function useDailyGame(): DailyGameState {
     return () => { cancelled = true; };
   }, []);
 
-  // Start timer on first guess.
-  useEffect(() => {
-    if (status === "playing" && startTimeRef.current === null) {
-      startTimer();
-    }
-  }, [status, startTimer]);
-
-  // Cleanup timer on unmount.
-  useEffect(() => () => stopTimer(), [stopTimer]);
-
-  /**
-   * Warn before tab close / refresh while a real run is in progress.
-   * Sets e.returnValue to trigger the browser's native "Leave site?" dialog.
-   * Does NOT submit here — submission only happens in the pagehide handler
-   * below, which fires only if the user actually confirms leaving.
-   */
-  useEffect(() => {
-    const inProgress = status === "playing" || status === "revealed";
-    if (!inProgress || practiceModeRef.current) return;
-
-    const onBeforeUnload = (e: BeforeUnloadEvent) => {
-      e.preventDefault();
-      e.returnValue = "";
-    };
-
-    window.addEventListener("beforeunload", onBeforeUnload);
-    return () => window.removeEventListener("beforeunload", onBeforeUnload);
-  }, [status]);
+  // Cleanup timers on unmount.
+  useEffect(
+    () => () => {
+      stopTimer();
+      if (revealTimeoutRef.current !== null) clearTimeout(revealTimeoutRef.current);
+    },
+    [stopTimer],
+  );
 
   /**
-   * Auto-submit when the page is actually unloading (user confirmed leaving,
-   * or navigated away via a Link). pagehide fires only on confirmed unload —
-   * unlike beforeunload it does NOT fire when the user clicks "Stay".
-   * keepalive keeps the request alive after the page is gone.
+   * Leaving mid-run records the current score as the daily result (otherwise
+   * a bad run could be abandoned and replayed). Fired by the leave guard on a
+   * confirmed link click or a real page unload; keepalive lets the request
+   * outlive the page.
    */
-  useEffect(() => {
-    const inProgress = status === "playing" || status === "revealed";
-    if (!inProgress) return;
-
-    const onPageHide = () => {
-      if (practiceModeRef.current) return;
-      if (!startTimeRef.current || guessesRef.current.length === 0) return;
-
-      const payload: SubmitScorePayload = {
-        date: dateRef.current,
-        score: scoreRef.current,
-        elapsed_ms: Date.now() - startTimeRef.current,
-        guesses: guessesRef.current,
-      };
-      fetch("/api/scores/submit", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(payload),
-        keepalive: true,
-      });
+  const submitOnLeave = useCallback(() => {
+    if (submittedRef.current || !startTimeRef.current || guessesRef.current.length === 0) return;
+    submittedRef.current = true;
+    const payload: SubmitScorePayload = {
+      date: dateRef.current,
+      score: scoreRef.current,
+      elapsed_ms: Date.now() - startTimeRef.current,
+      guesses: guessesRef.current,
     };
+    fetch("/api/scores/submit", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(payload),
+      keepalive: true,
+    }).catch(() => { /* page is going away — nothing to report to */ });
+  }, []);
 
-    window.addEventListener("pagehide", onPageHide);
-    return () => window.removeEventListener("pagehide", onPageHide);
-  }, [status]);
-
-  /**
-   * Intercept internal Next.js navigation (Link clicks) while a real run is
-   * in progress. Runs in the capture phase so we can cancel before Next.js's
-   * router picks up the event.
-   *
-   * NOTE: Next.js Link clicks are SPA transitions — the page never truly
-   * unloads, so `pagehide` does NOT fire for these. We must submit the score
-   * here directly when the user confirms leaving.
-   */
-  useEffect(() => {
-    const inProgress = status === "playing" || status === "revealed";
-
-    const onLinkClick = (e: MouseEvent) => {
-      if (!inProgress || practiceModeRef.current) return;
-
-      const anchor = (e.target as HTMLElement).closest("a");
-      if (!anchor) return;
-
-      const href = anchor.getAttribute("href") ?? "";
-      // Only block same-origin / relative links (internal navigation).
-      if (!href || href.startsWith("http") || href.startsWith("//")) return;
-
-      const confirmed = window.confirm(
-        "You're mid-run! If you leave now, your current score will be recorded as your daily result. Leave anyway?",
-      );
-      if (!confirmed) {
-        e.preventDefault();
-        e.stopPropagation();
-        return;
-      }
-
-      // User confirmed — submit the score now, before the SPA transition
-      // removes this page. pagehide won't fire for client-side navigation so
-      // we must do it here with keepalive so the request outlives the page.
-      if (startTimeRef.current) {
-        const payload: SubmitScorePayload = {
-          date: dateRef.current,
-          score: scoreRef.current,
-          elapsed_ms: Date.now() - startTimeRef.current,
-          guesses: guessesRef.current,
-        };
-        fetch("/api/scores/submit", {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify(payload),
-          keepalive: true,
-        });
-      }
-      // Navigation proceeds naturally after the fetch is fired.
-    };
-
-    document.addEventListener("click", onLinkClick, true);
-    return () => document.removeEventListener("click", onLinkClick, true);
-  }, [status]);
+  useLeaveGuard(
+    (status === "playing" || status === "revealed") && !practiceMode,
+    LEAVE_MESSAGE,
+    submitOnLeave,
+  );
 
   // ── public actions ─────────────────────────────────────────────────────────
 
@@ -358,6 +283,7 @@ export function useDailyGame(): DailyGameState {
 
   const startPractice = useCallback(() => {
     // Reset game state for a fresh practice run.
+    stopTimer();
     setPracticeMode(true);
     setRound(0);
     setScore(0);
@@ -368,7 +294,7 @@ export function useDailyGame(): DailyGameState {
     setLastResult(null);
     setRank(null);
     setStatus("idle");
-  }, []);
+  }, [stopTimer]);
 
   const submitScore = useCallback(
     async (finalScore: number, finalElapsedMs: number, allGuesses: GuessDirection[]) => {
@@ -377,6 +303,11 @@ export function useDailyGame(): DailyGameState {
         setStatus("done");
         return;
       }
+      if (submittedRef.current) {
+        setStatus("done");
+        return;
+      }
+      submittedRef.current = true;
 
       setStatus("submitting");
       let notAuthenticated = false;
@@ -419,7 +350,8 @@ export function useDailyGame(): DailyGameState {
       if (status !== "playing" && status !== "idle") return;
       if (cards.length < 2) return;
 
-      if (status === "idle") setStatus("playing");
+      // The clock starts on the first guess.
+      if (status === "idle") startTimer();
 
       const currentRound = round;
       const anchor = cards[currentRound];
@@ -439,7 +371,8 @@ export function useDailyGame(): DailyGameState {
 
       const isLastRound = currentRound >= cards.length - 2;
 
-      setTimeout(async () => {
+      revealTimeoutRef.current = setTimeout(async () => {
+        revealTimeoutRef.current = null;
         if (isLastRound) {
           stopTimer();
           const finalElapsed = startTimeRef.current
@@ -454,7 +387,7 @@ export function useDailyGame(): DailyGameState {
         setStatus("playing");
       }, REVEAL_DURATION_MS);
     },
-    [status, cards, round, stopTimer, submitScore],
+    [status, cards, round, startTimer, stopTimer, submitScore],
   );
 
   const totalRounds = Math.max(0, cards.length - 1);

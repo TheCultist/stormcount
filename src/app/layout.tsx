@@ -1,10 +1,6 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Geist, Geist_Mono } from "next/font/google";
 import { ClerkProvider } from "@clerk/nextjs";
-import { auth } from "@clerk/nextjs/server";
-import Script from "next/script";
-import { Analytics } from "@vercel/analytics/next";
-import { SpeedInsights } from "@vercel/speed-insights/next";
 import "./globals.css";
 import "./theme-izzet.css";
 import NavBar from "@/components/layout/NavBar";
@@ -12,7 +8,6 @@ import Footer from "@/components/layout/Footer";
 import CookieBanner from "@/components/layout/CookieBanner";
 import { BRAND } from "@/lib/constants";
 import { BASE_URL, absoluteUrl, jsonLd } from "@/lib/seo";
-import { isAdmin } from "@/lib/auth/admin";
 
 const fontDisplay = Fraunces({
   variable: "--font-display",
@@ -157,14 +152,11 @@ const siteJsonLd = {
   ],
 };
 
-export default async function RootLayout({
+export default function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
-  const { userId } = await auth();
-  const adminUser = await isAdmin(userId);
-
   return (
     <ClerkProvider>
       <html
@@ -173,7 +165,7 @@ export default async function RootLayout({
         className={`${fontDisplay.variable} ${fontSans.variable} ${fontMono.variable} h-full antialiased`}
       >
         <body className="relative flex min-h-full flex-col text-foreground">
-          <Script
+          <script
             id="schema-org"
             type="application/ld+json"
             dangerouslySetInnerHTML={{ __html: jsonLd(siteJsonLd) }}
@@ -183,12 +175,11 @@ export default async function RootLayout({
           <div className="atmosphere-rays" aria-hidden />
           <div className="atmosphere-vignette" aria-hidden />
 
-          <NavBar isAdmin={adminUser} />
+          <NavBar />
           <main className="relative flex flex-1 flex-col">{children}</main>
           <Footer />
+          {/* Also mounts Vercel Analytics + Speed Insights once consent is given. */}
           <CookieBanner />
-          <Analytics />
-          <SpeedInsights />
         </body>
       </html>
     </ClerkProvider>

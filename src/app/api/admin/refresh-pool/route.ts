@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { sql } from "drizzle-orm";
+import { lt, sql } from "drizzle-orm";
 import { auth } from "@clerk/nextjs/server";
 import { db } from "@/lib/db";
 import { cardPool } from "@/lib/db/schema";
@@ -16,7 +16,7 @@ export const maxDuration = 300;
  *
  * Downloads the latest Scryfall `oracle_cards` bulk file, applies the same
  * pool filters used by Daily/Survival, and upserts every eligible card into
- * the `card_pool` table.
+ * the `card_pool` table, then deletes rows this refresh didn't touch.
  *
  * Survival mode reads from `card_pool` on every request (`ORDER BY random()`),
  * so this endpoint should be re-run periodically (e.g. daily via a cron) to
@@ -56,13 +56,16 @@ export async function POST() {
     // on the Neon HTTP driver. 1000 per batch is comfortably under the
     // 16MB driver cap (each row is ~500 bytes serialized).
     //
-    // `excluded.card` references the proposed-but-rejected row from each
-    // INSERT, giving us a true per-row UPDATE on conflict.
+    // `excluded.*` references the proposed-but-rejected row from each
+    // INSERT, giving us a true per-row UPDATE on conflict. Every row written
+    // by this refresh carries the same `refreshStamp`.
+    const refreshStamp = new Date();
     const BATCH_SIZE = 1000;
     for (let i = 0; i < cards.length; i += BATCH_SIZE) {
       const chunk = cards.slice(i, i + BATCH_SIZE).map((card) => ({
         id: card.id,
         card,
+        refreshedAt: refreshStamp,
       }));
 
       await db
@@ -72,15 +75,25 @@ export async function POST() {
           target: cardPool.id,
           set: {
             card: sql`excluded.card`,
-            refreshedAt: sql`now()`,
+            refreshedAt: sql`excluded.refreshed_at`,
           },
         });
     }
+
+    // Rows are keyed by Scryfall *printing* id, and the printing that
+    // `oracle_cards` picks changes on reprint — so anything not rewritten
+    // above is a stale duplicate (or a card that no longer passes the
+    // filters). Without this, Survival gradually fills with repeats.
+    const removed = await db
+      .delete(cardPool)
+      .where(lt(cardPool.refreshedAt, refreshStamp))
+      .returning({ id: cardPool.id });
 
     return NextResponse.json(
       {
         message: "Card pool refreshed",
         count: cards.length,
+        removed: removed.length,
         durationMs: Date.now() - startedAt,
       },
       { status: 200 },

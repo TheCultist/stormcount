@@ -5,9 +5,35 @@ import { db } from "@/lib/db";
 import { themedDays } from "@/lib/db/schema";
 import { isAdmin } from "@/lib/auth/admin";
 import { randomUUID } from "node:crypto";
+import { daysInMonth } from "@/lib/dates";
+import { DAILY_SEED_SIZE } from "@/lib/constants";
+import { countPoolMatches } from "@/lib/scryfall/http";
 
 // Admin-only routes — never cache.
 export const dynamic = "force-dynamic";
+
+/** Rejects dates that never occur (Feb 31). Recurring rows may use Feb 29. */
+function isRealDate(day: number, month: number, year: string): boolean {
+  return day <= daysInMonth(year === "*" ? 2024 : Number(year), month);
+}
+
+/**
+ * Check a themed query against Scryfall before saving it: a typo or a query
+ * too narrow for a full Daily would otherwise only surface on the day itself.
+ * Returns an error message, or null when the query is usable (or Scryfall
+ * couldn't be reached — that shouldn't block an admin edit).
+ */
+async function queryProblem(query: string): Promise<string | null> {
+  try {
+    const matches = await countPoolMatches(query);
+    if (matches !== null && matches < DAILY_SEED_SIZE) {
+      return `scryfallQuery matches only ${matches} playable cards (after pool filters), need at least ${DAILY_SEED_SIZE}`;
+    }
+    return null;
+  } catch (err) {
+    return `Invalid scryfallQuery: ${err instanceof Error ? err.message : "rejected by Scryfall"}`;
+  }
+}
 
 /**
  * GET /api/admin/themed-days
@@ -118,6 +144,16 @@ export async function POST(req: Request) {
       { error: 'year must be "*" or a 4-digit string' },
       { status: 400 },
     );
+  }
+  if (!isRealDate(day, month, year)) {
+    return NextResponse.json(
+      { error: `${month}/${day} is not a real date` },
+      { status: 400 },
+    );
+  }
+  const problem = await queryProblem(scryfallQuery);
+  if (problem) {
+    return NextResponse.json({ error: problem }, { status: 400 });
   }
 
   // ── Insert ─────────────────────────────────────────────────────────────
@@ -237,6 +273,26 @@ export async function PATCH(req: Request) {
 
   if (Object.keys(patch).length === 0) {
     return NextResponse.json({ error: "No fields to update" }, { status: 400 });
+  }
+
+  if ("day" in patch || "month" in patch || "year" in patch) {
+    const current = await db.query.themedDays.findFirst({
+      where: eq(themedDays.id, id),
+      columns: { day: true, month: true, year: true },
+    });
+    if (!current) {
+      return NextResponse.json({ error: "Themed day not found" }, { status: 404 });
+    }
+    const day = (patch.day as number | undefined) ?? current.day;
+    const month = (patch.month as number | undefined) ?? current.month;
+    const year = (patch.year as string | undefined) ?? current.year;
+    if (!isRealDate(day, month, year)) {
+      return NextResponse.json({ error: `${month}/${day} is not a real date` }, { status: 400 });
+    }
+  }
+  if (typeof patch.scryfallQuery === "string") {
+    const problem = await queryProblem(patch.scryfallQuery);
+    if (problem) return NextResponse.json({ error: problem }, { status: 400 });
   }
 
   try {

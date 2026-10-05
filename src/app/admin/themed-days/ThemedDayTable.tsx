@@ -41,6 +41,12 @@ function rowToEditValues(row: ThemedDay): EditValues {
   };
 }
 
+/** Error text from a failed API response — tolerates non-JSON bodies (e.g. a platform 504 page). */
+async function errorMessage(res: Response): Promise<string> {
+  const data = (await res.json().catch(() => null)) as { error?: string } | null;
+  return data?.error ?? `Server error (${res.status})`;
+}
+
 // ── Single-row actions (edit / delete) ────────────────────────────────────────
 
 interface RowActionsProps {
@@ -54,10 +60,12 @@ function RowActions({ row, isEditing, onEditOpen, onEditClose }: RowActionsProps
   const router = useRouter();
   const [isPending, startTransition] = useTransition();
   const [deleting, setDeleting] = useState(false); // confirmation step
+  const [inFlight, setInFlight] = useState(false); // DELETE request running
   const [status, setStatus] = useState<RowStatus>({ kind: "idle" });
 
   async function handleDelete() {
     setStatus({ kind: "idle" });
+    setInFlight(true);
     try {
       const res = await fetch("/api/admin/themed-days", {
         method: "DELETE",
@@ -65,8 +73,7 @@ function RowActions({ row, isEditing, onEditOpen, onEditClose }: RowActionsProps
         body: JSON.stringify({ id: row.id }),
       });
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        setStatus({ kind: "error", message: data.error ?? `Server error (${res.status})` });
+        setStatus({ kind: "error", message: await errorMessage(res) });
         setDeleting(false);
         return;
       }
@@ -74,10 +81,12 @@ function RowActions({ row, isEditing, onEditOpen, onEditClose }: RowActionsProps
     } catch (err) {
       setStatus({ kind: "error", message: err instanceof Error ? err.message : "Unknown error" });
       setDeleting(false);
+    } finally {
+      setInFlight(false);
     }
   }
 
-  const busy = isPending;
+  const busy = isPending || inFlight;
 
   return (
     <div className="flex flex-col gap-1.5">
@@ -185,8 +194,7 @@ function EditForm({ row, onClose }: EditFormProps) {
       });
 
       if (!res.ok) {
-        const data = (await res.json()) as { error?: string };
-        setStatus({ kind: "error", message: data.error ?? `Server error (${res.status})` });
+        setStatus({ kind: "error", message: await errorMessage(res) });
         return;
       }
 
