@@ -1,5 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Geist, Geist_Mono } from "next/font/google";
+import localFont from "next/font/local";
 import { ClerkProvider } from "@clerk/nextjs";
 import "./globals.css";
 import "./theme-izzet.css";
@@ -9,23 +9,32 @@ import CookieBanner from "@/components/layout/CookieBanner";
 import { BRAND } from "@/lib/constants";
 import { BASE_URL, absoluteUrl, jsonLd } from "@/lib/seo";
 
-const fontDisplay = Fraunces({
+// Fonts are self-hosted (latin subset, the same variable woff2 files Google
+// Fonts serves) so the build never depends on reaching fonts.googleapis.com —
+// a failed fetch there broke Turbopack builds on Vercel. Every MTG card name
+// fits in latin (U+0000–00FF: Æther, Lim-Dûl, Juzám…); rarer glyphs fall back.
+const fontDisplay = localFont({
+  src: [
+    { path: "./fonts/fraunces-latin.woff2", weight: "400 800", style: "normal" },
+    { path: "./fonts/fraunces-italic-latin.woff2", weight: "400 800", style: "italic" },
+  ],
   variable: "--font-display",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700", "800"],
-  style: ["normal", "italic"],
+  display: "swap",
+  adjustFontFallback: "Times New Roman",
 });
 
-const fontSans = Geist({
+const fontSans = localFont({
+  src: "./fonts/geist-latin.woff2",
+  weight: "400 700",
   variable: "--font-sans",
-  subsets: ["latin"],
-  weight: ["400", "500", "600", "700"],
+  display: "swap",
 });
 
-const fontMono = Geist_Mono({
+const fontMono = localFont({
+  src: "./fonts/geist-mono-latin.woff2",
+  weight: "400 700",
   variable: "--font-mono",
-  subsets: ["latin"],
-  weight: ["400", "500", "700"],
+  display: "swap",
 });
 
 const defaultTitle = BRAND.seoTitle;

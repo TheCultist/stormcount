@@ -1,5 +1,28 @@
 # Lessons
 
+## Don't let the build depend on a third-party network fetch (next/font/google)
+
+**Date:** 2026-10-05
+
+**Symptom:** Vercel build failed in `next/font/google` (Fraunces) under
+Turbopack: `Module not found: Can't resolve
+'@vercel/turbopack-next/internal/font/google/font'` + "next/font/google
+queries have exactly one entry". The same commit built fine locally, even
+from a clean `.next`.
+
+**Root cause:** `next/font/google` downloads the CSS + font files from Google
+Fonts *during the build*. What Google returns to (or whether it answers)
+Vercel's build machines is outside our control; Turbopack's font loader fails
+hard on an unexpected response. Local builds can't reproduce it.
+
+**Fix:** Self-host with `next/font/local` — the same latin variable woff2
+files Google serves, committed under `src/app/fonts/`. Same CSS variables,
+same preload + size-adjusted fallbacks, no build-time network.
+
+**Rule for next time:** Builds must be hermetic. Prefer `next/font/local`
+(or an npm font package) over `next/font/google`; when a build fails only on
+the CI/host, suspect build-time network fetches first.
+
 ## Social "share" links can't carry the result in text — put it in the URL
 
 **Date:** 2026-06-10
