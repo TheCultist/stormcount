@@ -46,5 +46,5 @@ export type SubmitScorePayload = {
 };
 
 export type SubmitScoreResponse =
-  | { ok: true; rank: number | null }
+  | { ok: true; rank: number | null; /** Consecutive days played, ending today. */ streak?: number }
   | { ok: false; error: string };

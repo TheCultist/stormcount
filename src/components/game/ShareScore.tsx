@@ -2,8 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { BRAND } from "@/lib/constants";
-import { absoluteUrl } from "@/lib/seo";
-import { buildShareMessage, buildSharePath, type SharePayload } from "@/lib/share";
+import { buildShareMessage, buildShareUrl, type SharePayload } from "@/lib/share";
 import type { GameMode } from "@/lib/types";
 
 type ShareScoreProps = {
@@ -13,10 +12,18 @@ type ShareScoreProps = {
   totalRounds?: number;
   /** Daily: the challenge date (YYYY-MM-DD) baked into the share text. */
   date?: string;
+  /** Daily: per-guess correctness — rendered as the 🟩/🟥 grid. */
+  results?: boolean[];
+  /** Daily: consecutive days played (shown when ≥ 2). */
+  streak?: number | null;
 };
 
 type ShareTarget = {
   name: string;
+  /** `utm_source` value, so analytics can attribute visits per platform. */
+  source: string;
+  /** The target can't take a multi-line message (e.g. Reddit titles). */
+  singleLine?: boolean;
   /** Build the share-intent URL from the message and the page URL. */
   href: (text: string, url: string) => string;
   icon: React.ReactNode;
@@ -24,9 +31,13 @@ type ShareTarget = {
 
 const enc = encodeURIComponent;
 
+/** Message + link on its own line (keeps the emoji grid intact). */
+const withUrl = (text: string, url: string) => `${text}\n${url}`;
+
 const SHARE_TARGETS: ShareTarget[] = [
   {
     name: "X",
+    source: "x",
     href: (text, url) => `https://twitter.com/intent/tweet?text=${enc(text)}&url=${enc(url)}`,
     icon: (
       <SvgIcon>
@@ -36,7 +47,8 @@ const SHARE_TARGETS: ShareTarget[] = [
   },
   {
     name: "Bluesky",
-    href: (text, url) => `https://bsky.app/intent/compose?text=${enc(`${text} ${url}`)}`,
+    source: "bluesky",
+    href: (text, url) => `https://bsky.app/intent/compose?text=${enc(withUrl(text, url))}`,
     icon: (
       <SvgIcon>
         <path d="M12 10.8c-1.087-2.114-4.046-6.053-6.798-7.995C2.566.944 1.561 1.266.902 1.565.139 1.908 0 3.08 0 3.768c0 .69.378 5.65.624 6.479.815 2.736 3.713 3.66 6.383 3.364.136-.02.275-.039.415-.056-.138.022-.276.04-.415.056-3.912.58-7.387 2.005-2.83 7.078 5.013 5.19 6.87-1.113 7.823-4.308.953 3.195 2.05 9.271 7.733 4.308 4.267-4.308 1.172-6.498-2.74-7.078a8.741 8.741 0 0 1-.415-.056c.14.017.279.036.415.056 2.67.297 5.568-.628 6.383-3.364.246-.828.624-5.79.624-6.478 0-.69-.139-1.861-.902-2.206-.659-.298-1.664-.62-4.3 1.24C16.046 4.748 13.087 8.687 12 10.8Z" />
@@ -45,6 +57,7 @@ const SHARE_TARGETS: ShareTarget[] = [
   },
   {
     name: "Facebook",
+    source: "facebook",
     href: (text, url) =>
       `https://www.facebook.com/sharer/sharer.php?u=${enc(url)}&quote=${enc(text)}`,
     icon: (
@@ -55,6 +68,8 @@ const SHARE_TARGETS: ShareTarget[] = [
   },
   {
     name: "Reddit",
+    source: "reddit",
+    singleLine: true,
     href: (text, url) => `https://www.reddit.com/submit?url=${enc(url)}&title=${enc(text)}`,
     icon: (
       <SvgIcon>
@@ -64,7 +79,8 @@ const SHARE_TARGETS: ShareTarget[] = [
   },
   {
     name: "WhatsApp",
-    href: (text, url) => `https://wa.me/?text=${enc(`${text} ${url}`)}`,
+    source: "whatsapp",
+    href: (text, url) => `https://wa.me/?text=${enc(withUrl(text, url))}`,
     icon: (
       <SvgIcon>
         <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 0 1-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 0 1-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 0 1 2.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0 0 12.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 0 0 5.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 0 0-3.48-8.413Z" />
@@ -73,6 +89,7 @@ const SHARE_TARGETS: ShareTarget[] = [
   },
   {
     name: "Telegram",
+    source: "telegram",
     href: (text, url) => `https://t.me/share/url?url=${enc(url)}&text=${enc(text)}`,
     icon: (
       <SvgIcon>
@@ -110,18 +127,22 @@ export default function ShareScore(props: ShareScoreProps) {
 
   // Share the score-bearing /share URL so platforms that drop the post text
   // (Facebook) still render the result via the dynamic OG card.
+  const isDaily = props.mode === "daily";
   const payload: SharePayload = {
     mode: props.mode,
     score: props.score,
-    total: props.mode === "daily" ? props.totalRounds : undefined,
-    date: props.mode === "daily" ? props.date : undefined,
+    total: isDaily ? props.totalRounds : undefined,
+    date: isDaily ? props.date : undefined,
+    // Only a complete run's grid is consistent with score/total.
+    results:
+      isDaily && props.results?.length === props.totalRounds ? props.results : undefined,
   };
-  const text = buildShareMessage(payload);
-  const url = absoluteUrl(buildSharePath(payload));
+  const streak = isDaily ? props.streak ?? 0 : 0;
+  const text = buildShareMessage(payload, { streak });
 
   const nativeShare = async () => {
     try {
-      await navigator.share({ title: BRAND.name, text, url });
+      await navigator.share({ title: BRAND.name, text, url: buildShareUrl(payload, "native") });
     } catch {
       // User dismissed the share sheet — nothing to do.
     }
@@ -129,7 +150,7 @@ export default function ShareScore(props: ShareScoreProps) {
 
   const copy = async () => {
     try {
-      await navigator.clipboard.writeText(`${text} ${url}`);
+      await navigator.clipboard.writeText(withUrl(text, buildShareUrl(payload, "copy")));
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch {
@@ -160,10 +181,13 @@ export default function ShareScore(props: ShareScoreProps) {
           </button>
         )}
 
-        {SHARE_TARGETS.map(({ name, href, icon }) => (
+        {SHARE_TARGETS.map(({ name, source, singleLine, href, icon }) => (
           <a
             key={name}
-            href={href(text, url)}
+            href={href(
+              singleLine ? buildShareMessage(payload, { streak, singleLine }) : text,
+              buildShareUrl(payload, source),
+            )}
             target="_blank"
             rel="noopener noreferrer"
             aria-label={`Share on ${name}`}

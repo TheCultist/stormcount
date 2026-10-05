@@ -90,7 +90,7 @@ export function buildMetadata({
   const url = absoluteUrl(path);
   const desc = description ?? BRAND.description;
 
-  const ogTitle = title ? `${title} | ${BRAND.name}` : `${BRAND.name} — ${BRAND.tagline}`;
+  const ogTitle = title ? `${title} | ${BRAND.name}` : BRAND.seoTitle;
 
   return {
     ...(title ? { title } : {}),

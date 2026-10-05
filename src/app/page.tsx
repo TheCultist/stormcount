@@ -19,15 +19,15 @@ function todayLabel(): string {
 // Re-render on every request so the quote actually rotates.
 export const dynamic = "force-dynamic";
 
-// Use title.absolute so we get exactly "Storm Count — How high is your storm count?"
-// on the home page, bypassing the parent "%s | Storm Count" template.
+// Use title.absolute so the home page gets exactly the search-facing title,
+// bypassing the parent "%s | Storm Count" template.
 export const metadata: Metadata = {
   ...buildMetadata({
     path: "/",
     description: BRAND.description,
   }),
   title: {
-    absolute: `${BRAND.name} — ${BRAND.tagline}`,
+    absolute: BRAND.seoTitle,
   },
 };
 

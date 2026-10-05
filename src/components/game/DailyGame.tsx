@@ -5,6 +5,8 @@ import Link from "next/link";
 import CardBuyRow from "@/components/affiliate/CardBuyRow";
 import ScoreDisplay from "@/components/game/ScoreDisplay";
 import ShareScore from "@/components/game/ShareScore";
+import InstallPrompt from "@/components/game/InstallPrompt";
+import { dailyPuzzleNumber } from "@/lib/share";
 import VersusArena from "@/components/game/VersusArena";
 import { RulesPanel, ThemePanel, ThemeTitle, TieRulePill, type RuleEntry } from "@/components/game/GamePanels";
 import { useDailyGame } from "@/hooks/useDailyGame";
@@ -285,11 +287,15 @@ export default function DailyGame({
     lastResult,
     elapsedMs,
     rank,
+    results,
+    streak,
     error,
     startGame,
     startPractice,
     guess,
   } = useDailyGame();
+  const puzzleNumber = dailyPuzzleNumber(date);
+  const dateLabel = puzzleNumber ? `#${puzzleNumber} · ${date}` : date;
 
   const isRevealed = status === "revealed";
 
@@ -332,7 +338,7 @@ export default function DailyGame({
             <span aria-hidden className="h-1 w-1 rotate-45 bg-brass-bright anim-pulse" />
             Daily Challenge
             <span className="text-foreground/40">·</span>
-            <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{date}</span>
+            <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{dateLabel}</span>
           </p>
           {themed && <ThemeTitle>{themed}</ThemeTitle>}
         </div>
@@ -369,7 +375,7 @@ export default function DailyGame({
             <span aria-hidden className="h-1.5 w-1.5 rotate-45 bg-brass" />
             Daily Challenge
             <span className="text-foreground/40">·</span>
-            <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{date}</span>
+            <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{dateLabel}</span>
           </p>
           <h1
             className="storm-display font-extrabold leading-[0.95] text-foreground"
@@ -471,10 +477,15 @@ export default function DailyGame({
             </div>
 
             <div className="storm-mono flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[10px] uppercase tracking-[0.22em] text-muted">
-              <span className="border border-rule/50 bg-background-deep/30 px-2.5 py-1">{date}</span>
+              <span className="border border-rule/50 bg-background-deep/30 px-2.5 py-1">{dateLabel}</span>
               {elapsedMs > 0 && (
                 <span className="border border-rule/50 bg-background-deep/30 px-2.5 py-1">
                   {formatTime(elapsedMs)}
+                </span>
+              )}
+              {streak !== null && streak >= 2 && !practiceMode && (
+                <span className="border border-brass/40 bg-background-deep/30 px-2.5 py-1 text-brass-bright">
+                  🔥 {streak}-day streak
                 </span>
               )}
               {rank !== null && !practiceMode && !scoreUnsaved && (
@@ -528,8 +539,17 @@ export default function DailyGame({
 
             {/* Share — once the run is final, not while submitting */}
             {status === "done" && (
-              <ShareScore mode="daily" score={score} totalRounds={totalRounds} date={date} />
+              <ShareScore
+                mode="daily"
+                score={score}
+                totalRounds={totalRounds}
+                date={date}
+                results={results}
+                streak={practiceMode ? null : streak}
+              />
             )}
+
+            {status === "done" && <InstallPrompt />}
 
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">
               {!practiceMode && !scoreUnsaved ? (
@@ -578,7 +598,7 @@ export default function DailyGame({
               "Daily Challenge"
             )}
             <span className="text-foreground/40">·</span>
-            <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{date}</span>
+            <span className="storm-mono text-[10px] tracking-[0.22em] text-foreground/65">{dateLabel}</span>
             {themed && (
               <>
                 <span className="text-foreground/40">·</span>

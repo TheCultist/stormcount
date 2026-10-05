@@ -3,6 +3,8 @@
 import { useState, useRef, useCallback, useEffect } from "react";
 import type { MtgCard, GuessDirection, GuessResult } from "@/lib/types";
 import { REVEAL_DURATION_MS } from "@/lib/constants";
+import { isCorrectGuess } from "@/lib/game";
+import { recordFinishedRun } from "@/lib/engagement";
 import { useLeaveGuard } from "./useLeaveGuard";
 
 export type SurvivalStatus = "idle" | "playing" | "revealed" | "gameover";
@@ -212,15 +214,13 @@ export function useSurvivalGame() {
       const currentMystery = mystery;
       const currentStreak = streak;
 
-      const correct =
-        dir === "higher"
-          ? currentMystery.cmc >= anchor.cmc
-          : currentMystery.cmc < anchor.cmc;
+      const correct = isCorrectGuess(anchor, currentMystery, dir);
 
       setLastResult(correct ? "correct" : "wrong");
       setStatus("revealed");
 
       if (!correct) {
+        recordFinishedRun();
         const newPB = writePB(currentStreak);
         setPersonalBest(newPB);
 

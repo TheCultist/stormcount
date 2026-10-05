@@ -28,7 +28,7 @@ const fontMono = Geist_Mono({
   weight: ["400", "500", "700"],
 });
 
-const defaultTitle = `${BRAND.name} — ${BRAND.tagline}`;
+const defaultTitle = BRAND.seoTitle;
 
 export const viewport: Viewport = {
   width: "device-width",
@@ -46,6 +46,19 @@ export const metadata: Metadata = {
     template: `%s | ${BRAND.name}`,
   },
   description: BRAND.description,
+  keywords: [
+    "MTG daily game",
+    "MTG wordle",
+    "Magic: The Gathering game",
+    "mana value quiz",
+    "guess the mana value",
+    "MTG guessing game",
+  ],
+  // Search Console ownership tag — set GOOGLE_SITE_VERIFICATION to the
+  // `content` value Google gives for the "HTML tag" method.
+  ...(process.env.GOOGLE_SITE_VERIFICATION && {
+    verification: { google: process.env.GOOGLE_SITE_VERIFICATION },
+  }),
   // Site-wide canonical. Per-page metadata overrides via alternates.canonical.
   alternates: {
     canonical: "/",

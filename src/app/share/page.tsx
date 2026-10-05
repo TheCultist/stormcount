@@ -15,6 +15,7 @@ import { buildMetadata } from "@/lib/seo";
 import {
   buildShareDescription,
   buildSharePath,
+  dailyPuzzleNumber,
   parseShareParams,
   shareScoreLabel,
   type SharePayload,
@@ -34,9 +35,10 @@ export async function generateMetadata({ searchParams }: PageProps): Promise<Met
     });
   }
 
+  const puzzleNumber = payload.date ? dailyPuzzleNumber(payload.date) : null;
   const title =
     payload.mode === "daily"
-      ? `Daily Challenge — ${shareScoreLabel(payload)}`
+      ? `Daily ${puzzleNumber ? `#${puzzleNumber}` : "Challenge"} — ${shareScoreLabel(payload)}`
       : `Survival — ${payload.score} spells deep`;
 
   return buildMetadata({
@@ -114,6 +116,22 @@ function ShareCard({ payload }: { payload: SharePayload }) {
           )}
         </div>
 
+        {/* Their run, guess by guess */}
+        {isDaily && payload.results && (
+          <div
+            className="grid grid-cols-10 gap-1"
+            role="img"
+            aria-label={`${payload.score} correct guesses out of ${payload.results.length}`}
+          >
+            {payload.results.map((ok, i) => (
+              <span
+                key={i}
+                className={`h-3.5 w-3.5 rounded-[2px] ${ok ? "bg-correct-bright/80" : "bg-crimson-bright/80"}`}
+              />
+            ))}
+          </div>
+        )}
+
         {/* Metadata stamps */}
         <div className="storm-mono flex flex-wrap items-center justify-center gap-x-3 gap-y-2 text-[10px] uppercase tracking-[0.22em] text-muted">
           <span className="border border-rule/50 bg-background-deep/30 px-2.5 py-1">
@@ -121,6 +139,7 @@ function ShareCard({ payload }: { payload: SharePayload }) {
           </span>
           {isDaily && payload.date && (
             <span className="border border-rule/50 bg-background-deep/30 px-2.5 py-1">
+              {dailyPuzzleNumber(payload.date) ? `#${dailyPuzzleNumber(payload.date)} · ` : ""}
               {payload.date}
             </span>
           )}

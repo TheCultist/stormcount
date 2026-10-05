@@ -38,9 +38,15 @@ export const BRAND = {
   name: "Storm Count",
   domain: "stormcount.gg",
   tagline: "How high is your storm count?",
+  /**
+   * Search-facing title: says what the game is in the words people search
+   * for ("MTG", "daily", "mana value", "guessing game"). The tagline only
+   * means something to people who already know the site.
+   */
+  seoTitle: "Storm Count — Daily MTG Mana Value Guessing Game",
   /** One-paragraph site description used as the default meta description and og:description. */
   description:
-    "Storm Count is a free Magic: The Gathering guessing game. Each round shows two MTG cards — guess whether the mystery card's mana value is higher or lower. Daily challenges, survival mode, and global leaderboards.",
+    "Free daily Magic: The Gathering guessing game — a Wordle-style MTG puzzle. Two cards each round: is the mystery card's mana value higher or lower? New Daily every day, endless Survival, global leaderboards.",
   /** Short description used by PWA manifest and where length is constrained. */
   shortDescription:
     "A free MTG higher/lower mana-value guessing game. Daily challenges, survival mode, and leaderboards.",

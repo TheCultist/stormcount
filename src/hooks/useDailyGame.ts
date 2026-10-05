@@ -4,6 +4,8 @@ import { useState, useRef, useCallback, useEffect } from "react";
 import type { MtgCard, GuessDirection, GuessResult, SubmitScorePayload } from "@/lib/types";
 import { REVEAL_DURATION_MS } from "@/lib/constants";
 import { todayUtc } from "@/lib/dates";
+import { isCorrectGuess, scoreGuesses } from "@/lib/game";
+import { recordDailyStreak, recordFinishedRun } from "@/lib/engagement";
 import { useLeaveGuard } from "./useLeaveGuard";
 
 /**
@@ -87,6 +89,10 @@ export interface DailyGameState {
   lastResult: GuessResult | null;
   elapsedMs: number;
   rank: number | null;
+  /** Per-guess correctness so far, in order (drives the share grid). */
+  results: boolean[];
+  /** Consecutive days played, once a ranked run is finished (null otherwise). */
+  streak: number | null;
   error: string | null;
   /** pregame → idle (normal first play). */
   startGame: () => void;
@@ -107,6 +113,8 @@ export function useDailyGame(): DailyGameState {
   const [lastResult, setLastResult] = useState<GuessResult | null>(null);
   const [elapsedMs, setElapsedMs] = useState(0);
   const [rank, setRank] = useState<number | null>(null);
+  const [results, setResults] = useState<boolean[]>([]);
+  const [streak, setStreak] = useState<number | null>(null);
   const [scoreUnsaved, setScoreUnsaved] = useState(false);
   const [scoreAutoSaved, setScoreAutoSaved] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -191,6 +199,8 @@ export function useDailyGame(): DailyGameState {
               if (cancelled) return;
               setScore(deferred.score);
               setElapsedMs(deferred.elapsed_ms);
+              setResults(scoreGuesses(data.cards, deferred.guesses));
+              setStreak(recordDailyStreak(data.date));
               setScoreUnsaved(true);
               setStatus("done");
               return;
@@ -215,6 +225,8 @@ export function useDailyGame(): DailyGameState {
               if (cancelled) return;
               setScore(deferred.score);
               setElapsedMs(deferred.elapsed_ms);
+              setResults(scoreGuesses(data.cards, deferred.guesses));
+              setStreak(recordDailyStreak(data.date, body.streak));
               setRank(body.rank ?? null);
               setScoreAutoSaved(true);
               setStatus("done");
@@ -289,6 +301,8 @@ export function useDailyGame(): DailyGameState {
     setScore(0);
     scoreRef.current = 0;
     guessesRef.current = [];
+    setResults([]);
+    setStreak(null);
     startTimeRef.current = null;
     setElapsedMs(0);
     setLastResult(null);
@@ -311,6 +325,7 @@ export function useDailyGame(): DailyGameState {
 
       setStatus("submitting");
       let notAuthenticated = false;
+      let serverStreak: number | undefined;
       try {
         const payload: SubmitScorePayload = {
           date,
@@ -329,11 +344,16 @@ export function useDailyGame(): DailyGameState {
           notAuthenticated = true;
         } else {
           const data = await res.json();
-          if (data.ok) setRank(data.rank ?? null);
+          if (data.ok) {
+            setRank(data.rank ?? null);
+            serverStreak = data.streak;
+          }
         }
       } catch {
         // Non-fatal — game is still over.
       } finally {
+        // Signed-in: the server's cross-device count; otherwise this browser's.
+        setStreak(recordDailyStreak(date, serverStreak));
         if (notAuthenticated) {
           setScoreUnsaved(true);
         } else {
@@ -358,8 +378,7 @@ export function useDailyGame(): DailyGameState {
       const mystery = cards[currentRound + 1];
       if (!anchor || !mystery) return;
 
-      const correct =
-        dir === "higher" ? mystery.cmc >= anchor.cmc : mystery.cmc < anchor.cmc;
+      const correct = isCorrectGuess(anchor, mystery, dir);
 
       const newScore = scoreRef.current + (correct ? 1 : 0);
       scoreRef.current = newScore;
@@ -367,6 +386,7 @@ export function useDailyGame(): DailyGameState {
 
       setLastResult(correct ? "correct" : "wrong");
       setScore(newScore);
+      setResults((prev) => [...prev, correct]);
       setStatus("revealed");
 
       const isLastRound = currentRound >= cards.length - 2;
@@ -375,6 +395,7 @@ export function useDailyGame(): DailyGameState {
         revealTimeoutRef.current = null;
         if (isLastRound) {
           stopTimer();
+          recordFinishedRun();
           const finalElapsed = startTimeRef.current
             ? Date.now() - startTimeRef.current
             : 0;
@@ -411,6 +432,8 @@ export function useDailyGame(): DailyGameState {
     lastResult,
     elapsedMs,
     rank,
+    results,
+    streak,
     error,
     startGame,
     startPractice,

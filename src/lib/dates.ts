@@ -17,6 +17,13 @@ export function utcOffsetDate(offsetDays: number): string {
   return d.toISOString().slice(0, 10);
 }
 
+/** `iso` shifted by `days` (negative = earlier), as `yyyy-mm-dd`. */
+export function addDays(iso: string, days: number): string {
+  const d = new Date(`${iso}T00:00:00Z`);
+  d.setUTCDate(d.getUTCDate() + days);
+  return d.toISOString().slice(0, 10);
+}
+
 /** Number of days in a month (1–12), leap-year aware. */
 export function daysInMonth(year: number, month: number): number {
   return new Date(Date.UTC(year, month, 0)).getUTCDate();

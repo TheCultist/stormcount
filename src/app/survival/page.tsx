@@ -6,9 +6,9 @@ import { buildMetadata, buildVideoGame, buildBreadcrumbList, jsonLd } from "@/li
 import { findThemedDayForDate } from "@/lib/themedDays";
 import { todayUtc } from "@/lib/dates";
 
-const TITLE = "Survival Mode";
+const TITLE = "Survival Mode — Endless MTG Mana Value Quiz";
 const DESCRIPTION =
-  "Survival is endless Storm Count — an unlimited Magic: The Gathering higher/lower run that ends the moment you guess wrong. How far can you go?";
+  "Endless Magic: The Gathering higher-or-lower: guess each card's mana value until you miss once. How long a streak can you build?";
 
 export const metadata: Metadata = buildMetadata({
   path: "/survival",
@@ -26,7 +26,7 @@ const jsonLdBlocks = [
   }),
   buildBreadcrumbList([
     { name: "Home", path: "/" },
-    { name: TITLE, path: "/survival" },
+    { name: "Survival Mode", path: "/survival" },
   ]),
 ];
 

@@ -1,4 +1,7 @@
 import type { MetadataRoute } from "next";
+import { inArray } from "drizzle-orm";
+import { db } from "@/lib/db";
+import { dailySeeds } from "@/lib/db/schema";
 import { BRAND } from "@/lib/constants";
 import {
   archiveLastModified,
@@ -11,10 +14,31 @@ const base = `https://${BRAND.domain}`;
 // list drifts into 404s and misses recent days.
 export const revalidate = 86400;
 
-export default function sitemap(): MetadataRoute.Sitemap {
+/**
+ * Archive dates that actually have content. A day nobody played (before the
+ * seed cron existed) has no seed and no scores — listing it would hand
+ * crawlers an empty page. A DB failure degrades to "no archive URLs" rather
+ * than failing the sitemap.
+ */
+async function seededArchiveDates(): Promise<string[]> {
+  const candidates = getArchiveDatesForSitemap();
+  try {
+    const rows = await db
+      .select({ date: dailySeeds.date })
+      .from(dailySeeds)
+      .where(inArray(dailySeeds.date, candidates));
+    const seeded = new Set(rows.map((r) => r.date));
+    return candidates.filter((d) => seeded.has(d));
+  } catch (err) {
+    console.error("[sitemap] archive lookup failed:", err);
+    return [];
+  }
+}
+
+export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const now = new Date();
 
-  const leaderboardArchiveUrls: MetadataRoute.Sitemap = getArchiveDatesForSitemap().map(
+  const leaderboardArchiveUrls: MetadataRoute.Sitemap = (await seededArchiveDates()).map(
     (date) => ({
       url: `${base}/leaderboard/${date}`,
       // Frozen at end of UTC day so crawlers see a stable lastModified and

@@ -6,6 +6,7 @@ import type { AffiliateConfig } from "@/lib/affiliate";
 import CardBuyRow from "@/components/affiliate/CardBuyRow";
 import CavernHoldBanner from "@/components/affiliate/CavernHoldBanner";
 import ShareScore from "@/components/game/ShareScore";
+import InstallPrompt from "@/components/game/InstallPrompt";
 
 /** End-of-run screen for Survival mode. */
 type GameOverScreenProps = {
@@ -122,6 +123,7 @@ export default function GameOverScreen({
 
             {/* Share */}
             <ShareScore mode="survival" score={score} />
+            <InstallPrompt />
 
             {/* Actions */}
             <div className="mt-2 flex flex-col gap-3 sm:flex-row">

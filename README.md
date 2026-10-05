@@ -61,6 +61,7 @@ Copy `.env.example` to `.env.local` and fill in. Required keys:
 | `RESEND_API_KEY` | Resend API key for the contact form. |
 | `CONTACT_EMAIL` | Inbox that receives contact + bug-report submissions. |
 | `CRON_SECRET` | Shared secret Vercel Cron sends to `/api/cron/daily-seed`. Without it the cron route refuses to run (seeds are then generated lazily). |
+| `GOOGLE_SITE_VERIFICATION` | Optional. Google Search Console "HTML tag" verification value. |
 | `CAVERNHOLD_AFFILIATE_LINK`, `TCG_PLAYER_PARTNER_LINK`, `NEXT_PUBLIC_CARDTRADER_SHARE_CODE` | Optional affiliate links / codes. |
 
 ---

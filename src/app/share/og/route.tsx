@@ -10,7 +10,7 @@
  */
 import { ImageResponse } from "next/og";
 import { BRAND } from "@/lib/constants";
-import { parseShareParams } from "@/lib/share";
+import { dailyPuzzleNumber, parseShareParams } from "@/lib/share";
 
 export const runtime = "edge";
 
@@ -23,9 +23,14 @@ export async function GET(req: Request) {
   if (!payload) return new Response("Not found", { status: 404 });
 
   const isDaily = payload.mode === "daily";
+  const puzzleNumber = payload.date ? dailyPuzzleNumber(payload.date) : null;
   const modeLabel = isDaily
-    ? `Daily Challenge${payload.date ? ` · ${payload.date}` : ""}`
+    ? `Daily${puzzleNumber ? ` #${puzzleNumber}` : " Challenge"}${payload.date ? ` · ${payload.date}` : ""}`
     : "Survival Mode";
+  // With a result grid the hero shrinks so everything fits in 630px.
+  const grid = isDaily ? payload.results : undefined;
+  const gridRows: boolean[][] = [];
+  for (let i = 0; grid && i < grid.length; i += 10) gridRows.push(grid.slice(i, i + 10));
   const tagline = isDaily
     ? "Think you can read the storm better?"
     : "How long can you survive?";
@@ -91,7 +96,7 @@ export async function GET(req: Request) {
         {/* Hero score */}
         <div
           style={{
-            fontSize: isDaily ? 168 : 200,
+            fontSize: grid ? 112 : isDaily ? 168 : 200,
             fontWeight: 800,
             lineHeight: 1,
             color: "#c8a84b",
@@ -102,7 +107,7 @@ export async function GET(req: Request) {
         >
           {payload.score}
           {isDaily && payload.total != null && (
-            <span style={{ fontSize: 64, color: "rgba(242,232,208,0.5)", marginLeft: 12 }}>
+            <span style={{ fontSize: grid ? 44 : 64, color: "rgba(242,232,208,0.5)", marginLeft: 12 }}>
               / {payload.total}
             </span>
           )}
@@ -122,21 +127,45 @@ export async function GET(req: Request) {
           {isDaily ? "Storm count" : "Spells deep"}
         </div>
 
-        {/* Divider */}
-        <div style={{ width: 80, height: 2, background: "rgba(200,168,75,0.5)", margin: "28px 0" }} />
+        {/* Result grid — one square per guess, rows of ten */}
+        {grid && (
+          <div style={{ display: "flex", flexDirection: "column", gap: 6, marginTop: 22 }}>
+            {gridRows.map((row, r) => (
+              <div key={r} style={{ display: "flex", gap: 6 }}>
+                {row.map((ok, c) => (
+                  <div
+                    key={c}
+                    style={{
+                      width: 22,
+                      height: 22,
+                      borderRadius: 3,
+                      background: ok ? "#3f9d5a" : "#c2412f",
+                    }}
+                  />
+                ))}
+              </div>
+            ))}
+          </div>
+        )}
 
-        {/* Challenge tagline */}
-        <div
-          style={{
-            fontSize: 30,
-            color: "rgba(242,232,208,0.75)",
-            fontStyle: "italic",
-            letterSpacing: "0.02em",
-            display: "flex",
-          }}
-        >
-          {tagline}
-        </div>
+        {/* Divider + challenge tagline — the grid replaces them when present
+            (there's no vertical room for both above the domain stamp). */}
+        {!grid && (
+          <div style={{ width: 80, height: 2, background: "rgba(200,168,75,0.5)", margin: "28px 0" }} />
+        )}
+        {!grid && (
+          <div
+            style={{
+              fontSize: 30,
+              color: "rgba(242,232,208,0.75)",
+              fontStyle: "italic",
+              letterSpacing: "0.02em",
+              display: "flex",
+            }}
+          >
+            {tagline}
+          </div>
+        )}
 
         {/* Domain */}
         <div

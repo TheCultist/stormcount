@@ -1,10 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@clerk/nextjs/server";
-import { eq, and, count, sql } from "drizzle-orm";
+import { eq, and, count, desc, sql } from "drizzle-orm";
 import { db } from "@/lib/db";
 import { dailySeeds, dailyScores } from "@/lib/db/schema";
 import { upsertUserFromClerk } from "@/lib/db/users";
-import { isValidIsoDate, todayUtc, utcOffsetDate } from "@/lib/dates";
+import { addDays, isValidIsoDate, todayUtc, utcOffsetDate } from "@/lib/dates";
+import { scoreGuesses } from "@/lib/game";
 import { REVEAL_DURATION_MS } from "@/lib/constants";
 import type { SubmitScoreResponse } from "@/lib/types";
 
@@ -21,6 +22,25 @@ function isSubmittableDate(date: string): boolean {
   if (date === todayUtc()) return true;
   const msIntoDay = Date.now() % (24 * 60 * 60 * 1000);
   return date === utcOffsetDate(-1) && msIntoDay < MIDNIGHT_GRACE_MS;
+}
+
+/** Consecutive days (ending at `date`) this user has a Daily score for. */
+async function dailyStreak(userId: string, date: string): Promise<number> {
+  const rows = await db
+    .select({ date: dailyScores.date })
+    .from(dailyScores)
+    .where(and(eq(dailyScores.userId, userId), sql`${dailyScores.date} <= ${date}`))
+    .orderBy(desc(dailyScores.date))
+    .limit(400);
+
+  let streak = 0;
+  let expected = date;
+  for (const row of rows) {
+    if (row.date !== expected) break;
+    streak++;
+    expected = addDays(expected, -1);
+  }
+  return streak;
 }
 
 function fail(error: string, status: number) {
@@ -85,15 +105,8 @@ export async function POST(req: NextRequest): Promise<NextResponse<SubmitScoreRe
       return fail("Invalid submission", 400);
     }
 
-    // ── Server-side replay: recount correct guesses ───────────────────────
-    // Ties count as "higher" — must match the client's rule.
-    let verifiedScore = 0;
-    guesses.forEach((g, i) => {
-      const anchor = cards[i];
-      const mystery = cards[i + 1];
-      const correct = g === "higher" ? mystery.cmc >= anchor.cmc : mystery.cmc < anchor.cmc;
-      if (correct) verifiedScore++;
-    });
+    // ── Server-side replay: recount correct guesses (same rule as the client) ─
+    const verifiedScore = scoreGuesses(cards, guesses).filter(Boolean).length;
 
     const timeMs = Math.max(
       Math.round(elapsed_ms),
@@ -121,7 +134,11 @@ export async function POST(req: NextRequest): Promise<NextResponse<SubmitScoreRe
         ),
       );
 
-    return NextResponse.json({ ok: true, rank: Number(betterCount) + 1 });
+    return NextResponse.json({
+      ok: true,
+      rank: Number(betterCount) + 1,
+      streak: await dailyStreak(userId, date),
+    });
   } catch (err) {
     console.error("[scores/submit] error:", err);
     return fail("Couldn't save your score", 500);
